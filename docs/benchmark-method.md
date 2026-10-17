@@ -2,6 +2,8 @@
 
 Each engine uses the same pinned 1017 checkpoint, the same packed 1017 Engrams, TP2, a 262144-token request limit, eight request slots and DSpark depth up to three. TensorFold uses full exact prefill and no expert pruning. Thinking is tested both disabled and at reasoning effort 75. The budget is a model prompt setting; a 64-token output cap can end a thinking response before its final answer.
 
+The TensorFold text matrix was collected before explicitly enabling `TF_DSV41_BIAS_VL=/model`. The recipe now sets that flag for native image routing. It affects image positions, not these text-only requests; image understanding is not part of the benchmark.
+
 The published quick matrix uses 27 deterministic ledger lines: 520 input tokens with thinking disabled and 546 with reasoning effort 75. Decode runs use a 64-token output cap. C1 through C8 means that many simultaneous requests released from a barrier. Each point is one measured pass, after the engine's startup and earlier generation checks. This is a quick operational comparison; it does not estimate run-to-run variance.
 
 Separate prefill-only runs use the same input and a one-token output limit at C1 through C8. Both thinking modes apply. Actual token usage is retained rather than assuming that thinking headers have equal lengths. Earlier longer runs informed initial diagnostics and are excluded from this quick matrix.

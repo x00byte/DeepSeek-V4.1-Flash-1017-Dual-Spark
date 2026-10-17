@@ -53,6 +53,7 @@ def check():
  for name,meta in proof['files'].items():assert (bundle/name).stat().st_size==meta['bytes'],name
  index=json.loads((Path(C['MODEL_DIR'])/'model.safetensors.index.json').read_text())
  assert len(set(index['weight_map'].values()))==43
+ assert C['TF_DSV41_BIAS_VL']=='/model', '1017 native vision requires its inline routing biases'
  assert C['PARALLEL']=='8' and C['TF_DSV41_PREFILL']=='full' and C['TF_DSV41_EXPERT_TOPP']=='1.0'
  keys=[]
  for worker in (False,True):

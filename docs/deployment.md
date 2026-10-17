@@ -103,3 +103,5 @@ The TensorFold default is thinking on at effort 75. Requests override this with 
 ## Credits
 
 These commands adapt the deployment and compilation paths from [Jay Leaton's TensorFold Spark repository](https://github.com/jayleaton/deepseek-v41-tensorfold-spark) and [MiaAI's EXL3 dual-Spark kit](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks). Their source and license notices remain separate and pinned.
+
+The TensorFold profile sets `TF_DSV41_BIAS_VL=/model` on both ranks. The 1017 checkpoint includes these tensors, so use its own inline image-routing biases rather than an older release’s sidecar. The preflight checks all 43 tensors and the 40 main-layer attachments on CPU before GPU startup.

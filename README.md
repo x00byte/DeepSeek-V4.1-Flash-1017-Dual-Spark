@@ -36,6 +36,8 @@ docker save deepseek41-tensorfold:1017 | ssh spark-b docker load
 
 The Dockerfile uses NVIDIA PyTorch 26.07, preserves its torch and Triton versions, and installs the tested TensorFold source export. The source script applies upstream patches before the local 1017 patch. It leaves the original source checkouts available for review.
 
+Set `TF_DSV41_BIAS_VL=/model` on both ranks: this 1017 checkpoint contains the image-router biases inline. The preflight reads all 43 bias tensors and checks that the native attachment path loads the 40 main-layer routers correctly.
+
 The local adaptations cover 1017's inline image-router biases, 6-bit dense MTP layers in the vLLM overlay, tool-only turn handling, the actual TensorFold shared-pool memory budget, revision-specific packed paths and repeatable metadata publication to the NFS share.
 
 ## Download and verify the assets

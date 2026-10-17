@@ -1,4 +1,4 @@
-# DeepSeek V4.1 Flash Dual Spark benchmarks
+# DeepSeek V4.1 Flash 1017 Dual Spark benchmarks
 
 **TensorFold is faster for single-request decode. vLLM is faster for aggregate throughput at C8 and for effective prefill in these quick runs.**
 

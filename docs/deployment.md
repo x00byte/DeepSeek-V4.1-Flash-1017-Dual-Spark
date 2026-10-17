@@ -1,4 +1,4 @@
-# DeepSeek V4.1 Flash Dual Spark deployment
+# DeepSeek V4.1 Flash 1017 Dual Spark deployment
 
 The examples use `/srv` paths and documentation-only fabric addresses. Create writable directories for your own account on each host and replace the host and interface values before use.
 

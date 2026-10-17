@@ -1,0 +1,8 @@
+Use case: ads-marketing
+Asset type: GitHub README hero, wide landscape 16:9
+Primary request: A polished technical project cover for DeepSeek V4.1 Flash 1017 on two DGX Spark computers, using TensorFold.
+Input image 1: the official TensorFold logo, a luminous folded blue-magenta-orange mesh. Preserve its distinctive geometry and color identity as an existing brand mark.
+Scene: dark midnight navy studio, two understated brushed-metal compact Spark-class AI computers in the lower half, connected by two thin luminous blue fabric links. Above them, the TensorFold folded mesh mark and a restrained DeepSeek blue whale mark visually balance the title.
+Style: refined editorial technology illustration with precise typography, clean negative space, believable metal and subtle mesh illumination.
+Text (verbatim): "DeepSeek V4.1 Flash"; "TensorFold · Dual Spark"; "1017 · EXL3 2.9bpw · TP2"; small footer "C1–C8 prefill & decode".
+Constraints: tensorfold word capitalization exactly TensorFold; model version exactly V4.1; legible, balanced, professional. No benchmark numbers, charts, speedup claims, endorsements, unrelated marks, mascots or watermarks.

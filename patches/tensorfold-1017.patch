@@ -1,0 +1,54 @@
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/weights.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/weights.py
+@@ -248,7 +248,7 @@
+             raise ValueError(f"heads {cfg.num_attention_heads}, o_groups {cfg.o_groups} and the vocabulary "
+                              f"{cfg.vocab_size} must split over {world} ranks (vocabulary in blocks of 128)")
+         self.cfg, self.src, self.rank, self.world, self.device = cfg, src, rank, world, torch.device(device)
+-        self.bias_vl_src = bias_vl
++        self.bias_vl_src = bias_vl if bias_vl is not None else src
+ 
+     # primitives
+     def _dev(self, t: torch.Tensor) -> torch.Tensor:
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/encoding.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/encoding.py
+@@ -260,7 +260,7 @@
+ def _last_user(messages: list[dict]) -> int:
+     for idx in range(len(messages) - 1, -1, -1):
+         role = messages[idx]["role"]
+-        if role == "user" or (role == "system" and idx > 0):
++        if (role == "user" and any(not b["tool"] for b in messages[idx]["blocks"])) or (role == "system" and idx > 0):
+             return idx
+     return -1
+ 
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/memory.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/memory.py
+@@ -26,7 +26,7 @@
+ from collections.abc import Callable, Sequence
+ from dataclasses import dataclass, field
+ 
+-from .pool import pool_bytes
++from .pool import pool_bytes, settings as pool_settings, families as pool_families
+ from .state import slot_bytes
+ from .topology import Topology
+ 
+@@ -35,7 +35,7 @@
+ 
+ PACKS = {
+     # name: (per-rank GiB on rank 0 (vision on rank 0), what it is)
+-    "mia29": (99.48, "Mia / dealignai 2.9 bpw EXL3 mul1 (measured: weight_budget.py)"),
++    "mia29": (99.58, "Mia / dealignai 2.9 bpw EXL3 mul1 (measured: weight_budget.py)"),
+     "exp30": (99.48 + 3.63, "the same pack with routed experts at 3.0 bits on every layer (computed)"),
+     "cool30": (104.6, "coolbho3k-style: 3.0 bpw experts only, the rest source FP8 / BF16 (estimated +-1)"),
+ }
+@@ -91,7 +91,10 @@
+            index_kv: str = "bf16", workspace: Workspace | None = None, available: float = AVAILABLE) -> Budget:
+     workspace = workspace or Workspace()
+     w = PACKS[pack][0] - (VISION if rank == 1 else 0.0)
+-    return Budget(pack, rank, streams, context, index_kv, w, pool_bytes(topo, streams, context, index_kv) / GiB,
++    # Price the shared pool actually allocated by stack.build, including an explicit cap.
++    tokens = pool_settings(streams, context)
++    allocated = sum(f.row_bytes * (tokens // f.ratio) for f in pool_families(topo, index_kv))
++    return Budget(pack, rank, streams, context, index_kv, w, allocated / GiB,
+                   streams * slot_bytes(topo).total / GiB, workspace.total, RUNTIME, available)
+ 
+ 

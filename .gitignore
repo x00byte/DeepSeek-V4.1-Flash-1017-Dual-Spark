@@ -1,0 +1,10 @@
+build/
+.env
+config/*.env
+.venv/
+__pycache__/
+*.pyc
+state/
+cache/
+models/
+results/raw-local/

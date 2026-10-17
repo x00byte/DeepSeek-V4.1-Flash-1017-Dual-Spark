@@ -1,0 +1,21 @@
+{
+  "model": {
+    "repo": "LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw",
+    "revision": "afc7aa0aab98ee735c0f54e0a122019af1ac08f1",
+    "shards": 43
+  },
+  "engram": {
+    "repo": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "revision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "files": {
+      "model-00047-of-00048.safetensors": "76a05106ece259be83d1bfea0dcb54f23377864ee60fd321690f35e6698a2af5",
+      "model-00048-of-00048.safetensors": "9dc51433e195bc78b5ad846b68643cc0351d3b174e5e4309222d3b7402c83afd"
+    }
+  },
+  "sources": {
+    "mia": "6f7d1590ad49a2b8995188e45d7b9db31e677452",
+    "jayleaton": "2dcce0303451da2a59f80e6c7413da8b3b0f7a57",
+    "tensorfold": "c4646171139ee8a3c38103eaa1699dad226ec12b"
+  },
+  "vllmImage": "ghcr.io/miaai-lab/deepseek-v4.1-flash-exl3-2x-dgx-sparks@sha256:2f0cf3adc0f989c1d446be274df864eb799630175f604c3b22b71b7205971dce"
+}

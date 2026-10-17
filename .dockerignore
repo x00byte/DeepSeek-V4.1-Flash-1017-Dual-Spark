@@ -1,0 +1,4 @@
+**
+!build/
+!build/tensorfold/
+!build/tensorfold/**

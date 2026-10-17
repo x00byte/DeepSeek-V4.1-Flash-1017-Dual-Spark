@@ -1,0 +1,39 @@
+# HELP tensorfold_requests_total completions finished (errors included)
+# TYPE tensorfold_requests_total counter
+tensorfold_requests_total{model="deepseek-v4.1-flash-1017-tensorfold"} 147
+# HELP tensorfold_request_errors_total completions that raised
+# TYPE tensorfold_request_errors_total counter
+tensorfold_request_errors_total{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_requests_rejected_total completions refused after a fatal error
+# TYPE tensorfold_requests_rejected_total counter
+tensorfold_requests_rejected_total{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_prompt_tokens_total prompt tokens of finished completions
+# TYPE tensorfold_prompt_tokens_total counter
+tensorfold_prompt_tokens_total{model="deepseek-v4.1-flash-1017-tensorfold"} 252676
+# HELP tensorfold_cached_tokens_total prompt tokens resumed instead of prefilled
+# TYPE tensorfold_cached_tokens_total counter
+tensorfold_cached_tokens_total{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_completion_tokens_total generated tokens
+# TYPE tensorfold_completion_tokens_total counter
+tensorfold_completion_tokens_total{model="deepseek-v4.1-flash-1017-tensorfold"} 27110
+# HELP tensorfold_decode_rounds_total decode rounds (tokens / rounds: draft acceptance)
+# TYPE tensorfold_decode_rounds_total counter
+tensorfold_decode_rounds_total{model="deepseek-v4.1-flash-1017-tensorfold"} 872864
+# HELP tensorfold_decode_seconds_total seconds decoding
+# TYPE tensorfold_decode_seconds_total counter
+tensorfold_decode_seconds_total{model="deepseek-v4.1-flash-1017-tensorfold"} 2211.432800
+# HELP tensorfold_prefill_seconds_total seconds prefilling
+# TYPE tensorfold_prefill_seconds_total counter
+tensorfold_prefill_seconds_total{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_requests_inflight completions running now
+# TYPE tensorfold_requests_inflight gauge
+tensorfold_requests_inflight{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_requests_stalled running completions past GLM53_TF_STALL_S
+# TYPE tensorfold_requests_stalled gauge
+tensorfold_requests_stalled{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_engine_fatal 1 once the engine raised (restart both ranks)
+# TYPE tensorfold_engine_fatal gauge
+tensorfold_engine_fatal{model="deepseek-v4.1-flash-1017-tensorfold"} 0
+# HELP tensorfold_uptime_seconds seconds since the server started
+# TYPE tensorfold_uptime_seconds gauge
+tensorfold_uptime_seconds{model="deepseek-v4.1-flash-1017-tensorfold"} 977.050911

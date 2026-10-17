@@ -1,0 +1,127 @@
+--- a/start.sh
++++ b/start.sh
+@@ -1010,20 +1010,20 @@
+     else
+         sync_weights
+     fi
+-    mkdir -p "$HOME/dsv41-engram"
+-    log "packing head Engram rank 0 of TP=${TP} into $HOME/dsv41-engram ..."
++    mkdir -p "$HEAD_PACKED_DIR"
++    log "packing head Engram rank 0 of TP=${TP} into $HEAD_PACKED_DIR ..."
+     docker run --rm --network host \
+         -v "$ENGRAM_SRC:/models:ro" \
+-        -v "$HOME/dsv41-engram:/engram" \
++        -v "$HEAD_PACKED_DIR:/engram" \
+         --entrypoint python3 "$IMAGE" \
+         /opt/dsv41/pack_engram.py --model /models --rank 0 --tp "$TP" --out /engram
+     log "packing worker Engram rank 1 (from NFS/slim src, not a 190 GiB copy) ..."
+-    worker_ssh "mkdir -p '$WORKER_HOME/dsv41-engram'"
++    worker_ssh "mkdir -p '$WORKER_PACKED_DIR'"
+     local pack_src="$WORKER_ENGRAM_BIND"
+     [ "$backend" = "nfs" ] && pack_src="$NFS_VOLUME_ENGRAM"
+     worker_ssh "docker run --rm --network host \
+         -v '$pack_src:/models:ro' \
+-        -v '$WORKER_HOME/dsv41-engram:/engram' \
++        -v '$WORKER_PACKED_DIR:/engram' \
+         --entrypoint python3 '$IMAGE' \
+         /opt/dsv41/pack_engram.py --model /models --rank 1 --tp '$TP' --out /engram"
+     log "packed Engram shards written (vLLM hash-head ranges). File-backed lookup uses them when mounted at /engram-packed."
+@@ -1475,7 +1475,7 @@
+         ${worker_nccl} \
+         -e NCCL_SOCKET_IFNAME='$WORKER_CX7_IF' \
+         -e GLOO_SOCKET_IFNAME='$WORKER_CX7_IF' \
+-        -e NCCL_IB_HCA='$WORKER_CX7_IB' \
++        -e NCCL_IB_HCA='${WORKER_NCCL_IB_HCA:-$WORKER_CX7_IB}' \
+         -e NCCL_IB_GID_INDEX='$WORKER_GID' \
+         -e VLLM_HOST_IP='$WORKER_IP' \
+         ${serve_env} \
+@@ -1515,7 +1515,7 @@
+         "${nccl_common[@]}" \
+         -e NCCL_SOCKET_IFNAME="$HEAD_CX7_IF" \
+         -e GLOO_SOCKET_IFNAME="$HEAD_CX7_IF" \
+-        -e NCCL_IB_HCA="$HEAD_CX7_IB" \
++        -e NCCL_IB_HCA="${HEAD_NCCL_IB_HCA:-$HEAD_CX7_IB}" \
+         -e NCCL_IB_GID_INDEX="$HEAD_GID" \
+         -e VLLM_HOST_IP="$HEAD_IP" \
+         -e SERVED_MODEL_NAME="$SERVED_MODEL_NAME" \
+@@ -1796,6 +1796,12 @@
+     esac
+     case "$cmd" in
+         start)    shift || true; start ;;
++        prepare)
++            check_weights
++            prepare_engram_src_dir
++            nfs_share
++            write_inner_scripts
++            ;;
+         share)    share_weights ;;
+         pack)     pack_engram ;;
+         stop)     stop ;;
+--- a/scripts/nfs-share.sh
++++ b/scripts/nfs-share.sh
+@@ -140,17 +140,23 @@
+ nfs_hardlink_tree() {
+     local src="$1" dst="$2"
+     mkdir -p "$dst"
+-    cp -a --link "$src"/. "$dst"/ 2>/dev/null || cp -al "$src"/. "$dst"/
++    cp -a --link --remove-destination "$src"/. "$dst"/ 2>/dev/null || cp -al --remove-destination "$src"/. "$dst"/
+ }
+ 
+ nfs_publish() {
+-    local model_dst engram_dst n
++    local model_dst engram_dst n meta
+     model_dst="${HF_EXPORT_ROOT}/${NFS_EXPORT_MODEL}"
+     engram_dst="${HF_EXPORT_ROOT}/${NFS_EXPORT_ENGRAM}"
+     mkdir -p "$model_dst" "$engram_dst"
+     n=$(find "$model_dst" -maxdepth 1 -name 'model-*-of-*.safetensors' 2>/dev/null | wc -l | tr -d ' ')
+     if [ "${n:-0}" -ge "$EXPECTED_SHARDS" ] && [ -f "$model_dst/config.json" ]; then
+         log "NFS export already has ${NFS_EXPORT_MODEL} ($n shards)"
++        # Also publish newly supplied serving metadata after the weight shard set is complete.
++        for meta in config.json tokenizer_config.json tokenizer.json chat_template.jinja exl3_k_map.json generation_config.json; do
++            if [ -f "$MODEL_HOST/$meta" ] && ! [ "$MODEL_HOST/$meta" -ef "$model_dst/$meta" ]; then
++                cp -a --link --remove-destination "$MODEL_HOST/$meta" "$model_dst/$meta"
++            fi
++        done
+     else
+         log "publishing EXL3 → $model_dst (hardlinks into the live NFS export)"
+         nfs_hardlink_tree "$MODEL_HOST" "$model_dst"
+--- a/overlay/exl3.py
++++ b/overlay/exl3.py
+@@ -897,16 +897,16 @@
+     engram = km.get("engram") or {}
+     m = re.search(r"(?:layers|layer)[._](\d+)", p)
+     layer = m.group(1) if m else None
+-    if p.startswith("mtp") or ".mtp." in f".{p}.":
+-        return int(km.get("mtp_bits") or 4)
+-    # vLLM builds the DSpark draft (checkpoint mtp.{i}.*) as
+-    # model.layers.{num_hidden_layers + i}.* plus model.main_proj; every draft
+-    # tensor in this checkpoint is K=4 (mtp_bits), including attn and shared.
++    # The 1017 pack keeps MTP routed experts at K4 and raises dense MTP
++    # attention/shared/main_proj matrices to K6. vLLM renames mtp.N to
++    # model.layers.(num_hidden_layers + N), so cover both prefix forms.
+     n_main = int(km.get("num_hidden_layers") or 40)
+-    if layer is not None and int(layer) >= n_main:
+-        return int(km.get("mtp_bits") or 4)
+-    if "main_proj" in p:
+-        return int(km.get("mtp_bits") or 4)
++    is_mtp = (p.startswith("mtp") or ".mtp." in f".{p}."
++              or (layer is not None and int(layer) >= n_main)
++              or "main_proj" in p)
++    if is_mtp:
++        routed_mtp = "shared_expert" not in p and (".experts" in p or p.endswith("experts") or "routed" in p)
++        return int(km.get("mtp_bits") or 4) if routed_mtp else 6
+     if "shared_expert" in p and layer is not None:
+         k = shared.get(layer, shared.get(str(int(layer))))
+         if isinstance(k, int):
+--- a/files/chat_template.jinja
++++ b/files/chat_template.jinja
+@@ -118,7 +118,8 @@
+ {#- ---- 2. Index of the last user turn (mid-conversation systems count) ---- -#}
+ {%- set li = namespace(last_user = -1) -%}
+ {%- for m in ns.msgs -%}
+-    {%- if m.role == "user" or (m.role == "system" and not loop.first) -%}
++    {#- 1017: tool-result-only user messages continue the current turn. -#}
++    {%- if (m.role == "user" and (m.parts | rejectattr("tool") | list)) or (m.role == "system" and not loop.first) -%}
+         {%- set li.last_user = loop.index0 -%}
+     {%- endif -%}
+ {%- endfor -%}

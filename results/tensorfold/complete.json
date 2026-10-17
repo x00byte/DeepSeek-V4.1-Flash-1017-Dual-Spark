@@ -1,0 +1,21 @@
+{
+  "engine": "tensorfold",
+  "completed": 1792255065.6996114,
+  "input_lines": 27,
+  "decode_output_cap": 64,
+  "repeats": 1,
+  "thinking": [
+    "off",
+    "75"
+  ],
+  "concurrency": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ]
+}

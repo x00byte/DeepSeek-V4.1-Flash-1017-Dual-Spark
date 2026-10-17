@@ -1,0 +1,17 @@
+{
+  "model": "deepseek-v4.1-flash-1017-exl3",
+  "label": "vllm",
+  "base": "http://127.0.0.1:8888",
+  "repeats": 1,
+  "thinking": "75",
+  "concurrency": "1,2,3,4,5,6,7,8",
+  "skip_warmup": true,
+  "input_lines": 27,
+  "output_tokens": 1,
+  "out": "results/vllm/prefill-thinking-75",
+  "serving": [
+    "deepseek-v4.1-flash-1017-exl3"
+  ],
+  "started": 1792255737.0427606,
+  "notes": "Client effective prefill includes scheduling and first-token work; decode uses completion usage minus one over first-to-last streamed delta. Speculative decoding may return multiple tokens in a delta. Backend metrics are saved separately."
+}

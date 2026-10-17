@@ -8,9 +8,11 @@ The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek
 
 ## Measured results
 
-The [quick TensorFold results](results/README.md) cover C1 through C8, thinking disabled and reasoning effort 75, plus separate prefill-only runs. All 144 requests completed successfully. The vLLM comparison is pending.
+The [quick TensorFold and vLLM results](results/README.md) cover C1 through C8, thinking disabled and reasoning effort 75, plus separate prefill-only runs. Both engines completed 144 requests successfully each. The matching vLLM matrix is included alongside TensorFold.
 
 At C4, observed aggregate decode was **42.4 tok/s with thinking off** and **66.5 tok/s at effort 75**. Effective aggregate prefill was **431.7** and **422.1 tok/s**, respectively. These are short, single-pass endpoint measurements; read the method before comparing them with other workloads.
+
+The matching vLLM C4 run measured **47.9 tok/s decode off** and **44.9 tok/s at effort 75**, with effective aggregate prefill of **780.9** and **708.8 tok/s**. These one-pass samples do not establish a general engine ranking.
 
 See [the measurement method](docs/benchmark-method.md). Prefill-only tests use a one-token output cap; decode tests use 64 output tokens, with one pass at each point. Actual token usage, early stops, TTFT, observed decode and aggregate wall throughput are retained.
 

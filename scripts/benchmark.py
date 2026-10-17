@@ -67,7 +67,7 @@ def main():
                     if key in event: extra[key]=event[key]
                 for choice in event.get('choices',[]):
                     delta=choice.get('delta',{})
-                    if delta.get('content') or delta.get('reasoning_content'):
+                    if delta.get('content') or delta.get('reasoning_content') or delta.get('reasoning'):
                         now=time.perf_counter(); first=now if first is None else first;last=now;chunks+=1
                     finish=choice.get('finish_reason') or finish
         end=time.perf_counter()

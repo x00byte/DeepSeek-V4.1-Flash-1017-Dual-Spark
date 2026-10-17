@@ -12,16 +12,27 @@ The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek
 
 Both engines completed **144 requests each** across C1–C8, thinking disabled and reasoning effort 75, with separate prefill and decode runs. Prompt hashes and input/output token counts match across engines. [Full comparison and raw records](results/README.md).
 
-The output rates below are **aggregate tok/s including prefill**. Effective prefill is aggregate input tok/s measured through first-token delivery.
+The main table shows **observed decode tok/s**, excluding the initial wait for the first token. C1 is a single stream; C4 and C8 are aggregate rates across concurrent streams. Effective prefill is aggregate input tok/s measured through first-token delivery in separate prefill runs.
 
-| Engine | Thinking | C1 output | C4 output | C8 output | C8 effective prefill |
+| Engine | Thinking | C1 decode | C4 decode (aggregate) | C8 decode (aggregate) | C8 effective prefill |
 | --- | --- | ---: | ---: | ---: | ---: |
-| TensorFold | off | 26.7 | 35.6 | 35.2 | 444.7 |
-| TensorFold | 75 | 29.9 | 40.9 | 36.8 | 440.9 |
-| vLLM | off | 24.9 | 41.8 | 51.0 | 842.0 |
-| vLLM | 75 | 26.4 | 39.4 | 61.8 | 839.7 |
+| TensorFold | off | 58.1 | 42.4 | 41.3 | 444.7 |
+| TensorFold | 75 | **77.5** | 66.5 | 40.4 | 440.9 |
+| vLLM | off | 36.9 | 47.9 | 60.1 | 842.0 |
+| vLLM | 75 | 41.4 | 44.9 | 76.4 | 839.7 |
 
-In these quick runs, vLLM provides more capacity at C8 and faster effective prefill. TensorFold has faster C1 observed decode: 58.1 / 77.5 tok/s for off / 75, compared with vLLM’s 36.9 / 41.4. At C4, end-to-end output throughput favors vLLM with thinking off and is close with effort 75.
+TensorFold leads single-request decode in both thinking modes. vLLM leads aggregate decode at C8 and effective prefill. At C4, TensorFold leads decode with effort 75; vLLM leads with thinking off.
+
+For comparison, **end-to-end output throughput includes prefill time**. These lower rates count all output tokens over the complete batch duration:
+
+| Engine | Thinking | C1 end-to-end | C4 end-to-end (aggregate) | C8 end-to-end (aggregate) |
+| --- | --- | ---: | ---: | ---: |
+| TensorFold | off | 26.7 | 35.6 | 35.2 |
+| TensorFold | 75 | 29.9 | 40.9 | 36.8 |
+| vLLM | off | 24.9 | 41.8 | 51.0 |
+| vLLM | 75 | 26.4 | 39.4 | 61.8 |
+
+The 77.5 tok/s C1 decode result and 29.9 tok/s C1 end-to-end result describe the same TensorFold thinking-75 run using different timing windows. See [the full C1–C8 tables](results/README.md) for both measurements.
 
 These are short, single-pass endpoint measurements, not a quality evaluation or an estimate of sustained long-response performance. Both engines use the same checkpoint. See [the method](docs/benchmark-method.md) for decode-window rates, per-stream timing and limitations. Decode tests cap output at 64 tokens; separate prefill tests cap it at one token.
 

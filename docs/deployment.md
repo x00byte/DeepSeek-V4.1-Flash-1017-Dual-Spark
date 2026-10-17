@@ -1,4 +1,4 @@
-# Deployment details
+# DeepSeek V4.1 Flash Dual Spark deployment
 
 The examples use `/srv` paths and documentation-only fabric addresses. Create writable directories for your own account on each host and replace the host and interface values before use.
 
@@ -101,6 +101,8 @@ The measured runtime announced eight slots, full exact prefill, a shared 524288-
 The TensorFold default is thinking on at effort 75. Requests override this with `chat_template_kwargs.enable_thinking=false`, or select effort 75 explicitly with `chat_template_kwargs.reasoning_effort=75`. Both modes are benchmarked.
 
 The TensorFold profile sets `TF_DSV41_BIAS_VL=/model` on both ranks. The 1017 checkpoint includes these tensors, so use its own inline image-routing biases rather than an older release’s sidecar. The preflight checks all 43 tensors and the 40 main-layer attachments on CPU before GPU startup.
+
+After enabling the inline routing-bias flag, the deployed TensorFold service passed a text check (`17 * 19` returned `323`) and a native-image smoke check (a solid red 64×64 PNG was identified as `Red`). This checks the serving path; it is not an image-quality benchmark.
 
 ## Credits
 

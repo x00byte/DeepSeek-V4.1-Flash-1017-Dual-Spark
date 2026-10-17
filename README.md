@@ -1,4 +1,4 @@
-# DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw
+# DeepSeek V4.1 Flash Dual Spark
 
 ![DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw on dual Spark with TensorFold and vLLM](assets/hero.png)
 

@@ -8,6 +8,8 @@ The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek
 
 ## Measured results
 
+**TensorFold is faster for single-request decode. vLLM is faster for aggregate throughput at C8 and for effective prefill in these quick runs.**
+
 Both engines completed **144 requests each** across C1–C8, thinking disabled and reasoning effort 75, with separate prefill and decode runs. Prompt hashes and input/output token counts match across engines. [Full comparison and raw records](results/README.md).
 
 The output rates below are **aggregate tok/s including prefill**. Effective prefill is aggregate input tok/s measured through first-token delivery.

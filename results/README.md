@@ -1,5 +1,7 @@
 # DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw benchmarks
 
+**TensorFold is faster for single-request decode. vLLM is faster for aggregate throughput at C8 and for effective prefill in these quick runs.**
+
 TensorFold and vLLM use the same pinned `DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw` weights and packed 1017 Engrams on TP2 dual Spark. Each engine completed 144 requests successfully: C1–C8, thinking disabled and effort 75, with separate decode and prefill runs. Inputs are 520 tokens with thinking disabled and 546 with effort 75. Prompt hashes, input counts and output counts match across engines.
 
 Decode uses a 64-token cap; prefill uses one token. Each point is one pass. These short runs do not estimate variance or steady-state long-response performance. Startup and automatic warmup are excluded; the preliminary run that overlapped vLLM startup warmup is excluded.

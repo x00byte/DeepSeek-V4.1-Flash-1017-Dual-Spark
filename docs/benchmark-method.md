@@ -1,4 +1,4 @@
-# Benchmark method
+# DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw benchmark method
 
 Each engine uses the same pinned 1017 checkpoint, the same packed 1017 Engrams, TP2, a 262144-token request limit, eight request slots and DSpark depth up to three. TensorFold uses full exact prefill and no expert pruning. Thinking is tested both disabled and at reasoning effort 75. The budget is a model prompt setting; a 64-token output cap can end a thinking response before its final answer.
 

@@ -1,20 +1,27 @@
-# DeepSeek V4.1 Flash on two Sparks with TensorFold
+# DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw
 
-![DeepSeek V4.1 Flash with TensorFold on two Sparks](assets/hero.png)
+![DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw on dual Spark with TensorFold and vLLM](assets/hero.png)
 
-A pinned deployment recipe for DeepSeek V4.1 Flash 1017 EXL3 2.9bpw across two DGX Spark / GB10 systems. It provides separate TensorFold and vLLM profiles using the same checkpoint and official 1017 Engram tables, plus a reproducible C1–C8 prefill and decode benchmark with thinking disabled and thinking effort 75.
+A pinned deployment recipe for [`LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw`](https://huggingface.co/LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw) across two DGX Spark / GB10 systems. It provides separate TensorFold and vLLM profiles using the same checkpoint and official 1017 Engram tables, plus a reproducible C1–C8 prefill and decode benchmark with thinking disabled and thinking effort 75.
 
 The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek family patches and the small 1017 adaptations in this repository. The upstream Zig engine and 2.8bpw pack are separate deployment paths. Results here identify the engine, weights, thinking mode and measurement conditions explicitly.
 
 ## Measured results
 
-The [quick TensorFold and vLLM results](results/README.md) cover C1 through C8, thinking disabled and reasoning effort 75, plus separate prefill-only runs. Both engines completed 144 requests successfully each. The matching vLLM matrix is included alongside TensorFold.
+Both engines completed **144 requests each** across C1–C8, thinking disabled and reasoning effort 75, with separate prefill and decode runs. Prompt hashes and input/output token counts match across engines. [Full comparison and raw records](results/README.md).
 
-At C4, observed aggregate decode was **42.4 tok/s with thinking off** and **66.5 tok/s at effort 75**. Effective aggregate prefill was **431.7** and **422.1 tok/s**, respectively. These are short, single-pass endpoint measurements; read the method before comparing them with other workloads.
+The output rates below are **aggregate tok/s including prefill**. Effective prefill is aggregate input tok/s measured through first-token delivery.
 
-The matching vLLM C4 run measured **47.9 tok/s decode off** and **44.9 tok/s at effort 75**, with effective aggregate prefill of **780.9** and **708.8 tok/s**. These one-pass samples do not establish a general engine ranking.
+| Engine | Thinking | C1 output | C4 output | C8 output | C8 effective prefill |
+| --- | --- | ---: | ---: | ---: | ---: |
+| TensorFold | off | 26.7 | 35.6 | 35.2 | 444.7 |
+| TensorFold | 75 | 29.9 | 40.9 | 36.8 | 440.9 |
+| vLLM | off | 24.9 | 41.8 | 51.0 | 842.0 |
+| vLLM | 75 | 26.4 | 39.4 | 61.8 | 839.7 |
 
-See [the measurement method](docs/benchmark-method.md). Prefill-only tests use a one-token output cap; decode tests use 64 output tokens, with one pass at each point. Actual token usage, early stops, TTFT, observed decode and aggregate wall throughput are retained.
+In these quick runs, vLLM provides more capacity at C8 and faster effective prefill. TensorFold has faster C1 observed decode: 58.1 / 77.5 tok/s for off / 75, compared with vLLM’s 36.9 / 41.4. At C4, end-to-end output throughput favors vLLM with thinking off and is close with effort 75.
+
+These are short, single-pass endpoint measurements, not a quality evaluation or an estimate of sustained long-response performance. Both engines use the same checkpoint. See [the method](docs/benchmark-method.md) for decode-window rates, per-stream timing and limitations. Decode tests cap output at 64 tokens; separate prefill tests cap it at one token.
 
 ## Hardware and storage
 

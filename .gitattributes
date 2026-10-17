@@ -1,3 +1,4 @@
 *.csv text eol=lf
 *.patch -whitespace
 LICENSES/** -whitespace
+results/**/*.txt -whitespace

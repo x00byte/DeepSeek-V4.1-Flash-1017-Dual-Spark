@@ -6,7 +6,35 @@ A pinned deployment recipe for [`LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bp
 
 The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek family patches and the small 1017 adaptations in this repository. The upstream Zig engine and 2.8bpw pack are separate deployment paths. Results here identify the engine, weights, thinking mode and measurement conditions explicitly.
 
-## Measured results
+## Update: 2026-10-18
+
+The current exact TensorFold profile expands graph coverage and expert-pass
+capacity using the same checkpoint, Engrams, precision and existing kernels.
+Against a fresh matched TensorFold baseline:
+
+| C8 metric, aggregate tok/s | Original | Tuned | Change |
+| --- | ---: | ---: | ---: |
+| Decode only, thinking off | 122.1 | 125.4 | +2.7% |
+| Decode only, effort 75 | 204.2 | **238.2** | **+16.6%** |
+| End to end, thinking off | 78.4 | 80.3 | +2.4% |
+| End to end, effort 75 | 104.6 | **112.5** | **+7.5%** |
+
+Cold prefill improved **2.4–6.9%** across 1,536/3,072-token prompts; C1 decode
+remained within 1.5%. All **44 timed requests and 2,312 output tokens per profile**
+retained identical native prompt IDs, full output token IDs and text. These are
+medians of two repeats from one boot per profile: 128-input/64-output-token prose
+decode, with separate cap-one cold-prefill tests. Decode uses a verified interval
+after all requests start emitting; end-to-end rates include prefill and complete
+batch response delivery. No sustained-throughput or broad quality claim is made.
+[Comparison and raw records](results/exact-tuning-20261018/comparison.json),
+[measurement scope and reproduction](docs/benchmark-method.md#exact-tuning-on-2026-10-18)
+and [retained settings](config/tensorfold-knobs.env.example).
+
+## Original cross-engine measurements
+
+The original cross-engine comparison below uses a different ledger workload and
+streaming window. Its C8 rates must not be compared directly with the new
+decode-only suffix measurements. vLLM was not rerun for the tuning comparison.
 
 **TensorFold is faster for single-request decode. vLLM is faster for effective prefill in these quick runs.**
 

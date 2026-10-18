@@ -1,0 +1,263 @@
+{
+  "before": {
+    "ok": true,
+    "mode": "basic",
+    "uptime_s": 9.9,
+    "inflight": 0,
+    "oldest_s": 0.0,
+    "idle_s": 0.0,
+    "requests": 11,
+    "errors": 0,
+    "backend": "tensorfold",
+    "busy": false,
+    "requests_running": 0,
+    "requests_total": 11,
+    "prompt_tokens_total": 1408,
+    "completion_tokens_total": 200,
+    "prefill_seconds_total": 0,
+    "decode_seconds_total": 26.738,
+    "cached_tokens_total": 0,
+    "rounds_total": 586,
+    "drafted_total": 0,
+    "accepted_total": 0,
+    "streams": {
+      "decoding": 0,
+      "prefilling": 0,
+      "max": 8
+    },
+    "context_length": 262144,
+    "deepseek_phase": {
+      "source_sha256": {
+        "families.deepseek_v41.cuda.batch": "040f41e9ce4ef8ff3ffd20e19e20d4648d1978d3beccdeb1b0b3481ae205d3ca",
+        "families.deepseek_v41.cuda.rounds": "c85302535305ae1046bf0aaffa368f0e74212ff21e7f8039606f010b281c0acb",
+        "families.glm5_next.spark.health": "6bd74b6970f83629bb770841e07d0428bd48d31f1c34f6168394b2fe218fc688"
+      },
+      "session_store_disabled": true,
+      "schema": 1,
+      "prefill_tokens": 1397,
+      "prefill_finalizations": 11,
+      "prefill_rounds": 5,
+      "decode_rounds": 61,
+      "verified_rows": 240,
+      "dspark_windows": 80,
+      "lookup_windows": 0,
+      "serial_windows": 2,
+      "rounds_started": 65,
+      "rounds_completed": 64,
+      "round_errors": 0,
+      "executor_active": true,
+      "verified_rows_histogram": {
+        "2": 24,
+        "4": 23,
+        "3": 8,
+        "1": 2,
+        "18": 1,
+        "30": 1,
+        "19": 1,
+        "7": 1
+      },
+      "dspark_padded_slots_histogram": {
+        "1": 55,
+        "8": 3,
+        "2": 1
+      },
+      "target_graphs": {
+        "stats": {
+          "warm": 8,
+          "lazy": 4,
+          "replays": 243,
+          "eager": 4,
+          "failed": 0,
+          "warm_s": 2.92,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 12,
+        "keys": [
+          "(1, 0)",
+          "(12, 0)",
+          "(16, 0)",
+          "(2, 0)",
+          "(24, 0)",
+          "(3, 0)",
+          "(32, 0)",
+          "(4, 0)",
+          "(5, 0)",
+          "(6, 0)",
+          "(7, 0)",
+          "(8, 0)"
+        ],
+        "max_slots": 64
+      },
+      "draft_graphs": {
+        "stats": {
+          "warm": 3,
+          "lazy": 0,
+          "replays": 65,
+          "eager": 0,
+          "failed": 0,
+          "warm_s": 0.18,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 3,
+        "keys": [
+          "(1, 5, 'full')",
+          "(2, 5, 'full')",
+          "(4, 5, 'full')"
+        ],
+        "max_slots": 4
+      },
+      "speculative_draft": {
+        "launched": 56,
+        "hit": 51,
+        "miss.reset": 1,
+        "miss.unused": 2,
+        "miss.slots": 1,
+        "skip.nograph": 3
+      }
+    }
+  },
+  "after": {
+    "ok": true,
+    "mode": "basic",
+    "uptime_s": 16.4,
+    "inflight": 0,
+    "oldest_s": 0.0,
+    "idle_s": 0.0,
+    "requests": 19,
+    "errors": 0,
+    "backend": "tensorfold",
+    "busy": false,
+    "requests_running": 0,
+    "requests_total": 19,
+    "prompt_tokens_total": 2432,
+    "completion_tokens_total": 712,
+    "prefill_seconds_total": 0,
+    "decode_seconds_total": 73.1553,
+    "cached_tokens_total": 0,
+    "rounds_total": 1331,
+    "drafted_total": 0,
+    "accepted_total": 0,
+    "streams": {
+      "decoding": 0,
+      "prefilling": 0,
+      "max": 8
+    },
+    "context_length": 262144,
+    "deepseek_phase": {
+      "source_sha256": {
+        "families.deepseek_v41.cuda.batch": "040f41e9ce4ef8ff3ffd20e19e20d4648d1978d3beccdeb1b0b3481ae205d3ca",
+        "families.deepseek_v41.cuda.rounds": "c85302535305ae1046bf0aaffa368f0e74212ff21e7f8039606f010b281c0acb",
+        "families.glm5_next.spark.health": "6bd74b6970f83629bb770841e07d0428bd48d31f1c34f6168394b2fe218fc688"
+      },
+      "session_store_disabled": true,
+      "schema": 1,
+      "prefill_tokens": 2413,
+      "prefill_finalizations": 19,
+      "prefill_rounds": 7,
+      "decode_rounds": 94,
+      "verified_rows": 882,
+      "dspark_windows": 303,
+      "lookup_windows": 0,
+      "serial_windows": 5,
+      "rounds_started": 99,
+      "rounds_completed": 98,
+      "round_errors": 0,
+      "executor_active": true,
+      "verified_rows_histogram": {
+        "2": 26,
+        "4": 23,
+        "3": 8,
+        "1": 2,
+        "18": 2,
+        "30": 1,
+        "19": 5,
+        "7": 1,
+        "32": 2,
+        "31": 1,
+        "28": 1,
+        "27": 1,
+        "23": 2,
+        "26": 1,
+        "25": 3,
+        "21": 3,
+        "20": 4,
+        "22": 2,
+        "15": 1,
+        "14": 1,
+        "13": 1,
+        "6": 3
+      },
+      "dspark_padded_slots_histogram": {
+        "1": 57,
+        "8": 30,
+        "2": 2,
+        "4": 3
+      },
+      "target_graphs": {
+        "stats": {
+          "warm": 8,
+          "lazy": 4,
+          "replays": 276,
+          "eager": 4,
+          "failed": 0,
+          "warm_s": 2.92,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 12,
+        "keys": [
+          "(1, 0)",
+          "(12, 0)",
+          "(16, 0)",
+          "(2, 0)",
+          "(24, 0)",
+          "(3, 0)",
+          "(32, 0)",
+          "(4, 0)",
+          "(5, 0)",
+          "(6, 0)",
+          "(7, 0)",
+          "(8, 0)"
+        ],
+        "max_slots": 64
+      },
+      "draft_graphs": {
+        "stats": {
+          "warm": 3,
+          "lazy": 0,
+          "replays": 76,
+          "eager": 0,
+          "failed": 0,
+          "warm_s": 0.18,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 3,
+        "keys": [
+          "(1, 5, 'full')",
+          "(2, 5, 'full')",
+          "(4, 5, 'full')"
+        ],
+        "max_slots": 4
+      },
+      "speculative_draft": {
+        "launched": 62,
+        "hit": 52,
+        "miss.reset": 1,
+        "miss.unused": 2,
+        "miss.slots": 6,
+        "skip.nograph": 30
+      }
+    }
+  }
+}

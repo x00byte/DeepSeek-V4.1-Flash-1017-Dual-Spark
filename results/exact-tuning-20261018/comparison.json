@@ -1,0 +1,330 @@
+{
+  "schema": 1,
+  "model": "LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw",
+  "revision": "afc7aa0aab98ee735c0f54e0a122019af1ac08f1",
+  "plan_sha256": "ec25741f3d6c45fc3d02460bb36f670aea31b8d3cd596c149f50d5f46b8922d6",
+  "timed_requests_per_profile": 44,
+  "timed_output_tokens_per_profile": {
+    "baseline-exact1536": 2312,
+    "candidate-exact-tuned": 2312
+  },
+  "all_timed_prompt_ids_and_full_output_token_ids_and_text_match": true,
+  "baseline": {
+    "expert_block": 1024,
+    "draft_graph_slots": 4,
+    "target_graph_rows_max": 32,
+    "target_graph_warm": "decode"
+  },
+  "candidate": {
+    "expert_block": 1536,
+    "draft_graph_slots": 8,
+    "target_graph_rows_max": 64,
+    "target_graph_warm": "all"
+  },
+  "arithmetic": "existing exact prefill; same weights, precision and model kernels",
+  "limitations": [
+    "two repeats per cohort, one boot per profile",
+    "64-token varied-prose decode; finite batch with finishing tails",
+    "cap-one prefill at1536/3072 tokens; includes scheduling and first output",
+    "bounded output reproducibility, not a broad quality evaluation",
+    "combined profile; no separate attribution to each setting"
+  ],
+  "comparisons": [
+    {
+      "phase": "decode",
+      "thinking": "off",
+      "concurrency": 1,
+      "input_tokens": 128,
+      "metric": "raw_decode_aggregate_tps",
+      "values": {
+        "baseline-exact1536": [
+          55.966025684053925,
+          63.06520883666358
+        ],
+        "candidate-exact-tuned": [
+          55.09768299582124,
+          62.26427092057614
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 59.51561726035875,
+        "candidate-exact-tuned": 58.680976958198684
+      },
+      "median_gain_percent": -1.402388718424652,
+      "skip_nograph": {
+        "baseline-exact1536": [
+          0,
+          0
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "target_eager": {
+        "baseline-exact1536": [
+          0,
+          0
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "end_to_end_output_tps": {
+        "baseline-exact1536": [
+          41.41104764741689,
+          29.895555565345653
+        ],
+        "candidate-exact-tuned": [
+          40.9285240401726,
+          44.6202832811402
+        ]
+      }
+    },
+    {
+      "phase": "decode",
+      "thinking": "off",
+      "concurrency": 8,
+      "input_tokens": 128,
+      "metric": "raw_decode_aggregate_tps",
+      "values": {
+        "baseline-exact1536": [
+          121.58125142864206,
+          122.63345838557554
+        ],
+        "candidate-exact-tuned": [
+          125.60457140424266,
+          125.23886788084279
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 122.1073549071088,
+        "candidate-exact-tuned": 125.42171964254273
+      },
+      "median_gain_percent": 2.7143039319419193,
+      "skip_nograph": {
+        "baseline-exact1536": [
+          27,
+          27
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "target_eager": {
+        "baseline-exact1536": [
+          0,
+          0
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "end_to_end_output_tps": {
+        "baseline-exact1536": [
+          78.43038007043403,
+          78.35815361219352
+        ],
+        "candidate-exact-tuned": [
+          80.49199690502391,
+          80.02811629089308
+        ]
+      }
+    },
+    {
+      "phase": "decode",
+      "thinking": "high",
+      "concurrency": 1,
+      "input_tokens": 128,
+      "metric": "raw_decode_aggregate_tps",
+      "values": {
+        "baseline-exact1536": [
+          88.08182153718928,
+          93.71349454598851
+        ],
+        "candidate-exact-tuned": [
+          89.89626074015854,
+          93.66215006035688
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 90.8976580415889,
+        "candidate-exact-tuned": 91.77920540025771
+      },
+      "median_gain_percent": 0.9698240611055953,
+      "skip_nograph": {
+        "baseline-exact1536": [
+          0,
+          0
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "target_eager": {
+        "baseline-exact1536": [
+          0,
+          0
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "end_to_end_output_tps": {
+        "baseline-exact1536": [
+          55.345044004283984,
+          57.40391770398653
+        ],
+        "candidate-exact-tuned": [
+          55.70634620142135,
+          57.137673021457
+        ]
+      }
+    },
+    {
+      "phase": "decode",
+      "thinking": "high",
+      "concurrency": 8,
+      "input_tokens": 128,
+      "metric": "raw_decode_aggregate_tps",
+      "values": {
+        "baseline-exact1536": [
+          214.29013878543606,
+          194.1088445341051
+        ],
+        "candidate-exact-tuned": [
+          235.20535743530303,
+          241.17470957177085
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 204.19949165977056,
+        "candidate-exact-tuned": 238.19003350353694
+      },
+      "median_gain_percent": 16.645752429393966,
+      "skip_nograph": {
+        "baseline-exact1536": [
+          13,
+          13
+        ],
+        "candidate-exact-tuned": [
+          0,
+          0
+        ]
+      },
+      "target_eager": {
+        "baseline-exact1536": [
+          6,
+          7
+        ],
+        "candidate-exact-tuned": [
+          1,
+          1
+        ]
+      },
+      "end_to_end_output_tps": {
+        "baseline-exact1536": [
+          107.88271257814382,
+          101.30439527556582
+        ],
+        "candidate-exact-tuned": [
+          110.87557544066728,
+          114.07890778899622
+        ]
+      }
+    },
+    {
+      "phase": "prefill",
+      "thinking": "off",
+      "concurrency": 1,
+      "input_tokens": 1536,
+      "metric": "effective_cold_prefill_input_tps",
+      "values": {
+        "baseline-exact1536": [
+          464.60426473698277,
+          461.95443512866296
+        ],
+        "candidate-exact-tuned": [
+          474.3579376267052,
+          476.80238189737554
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 463.27934993282287,
+        "candidate-exact-tuned": 475.58015976204035
+      },
+      "median_gain_percent": 2.655160397501244
+    },
+    {
+      "phase": "prefill",
+      "thinking": "off",
+      "concurrency": 1,
+      "input_tokens": 3072,
+      "metric": "effective_cold_prefill_input_tps",
+      "values": {
+        "baseline-exact1536": [
+          500.9317821160464,
+          498.2784014133
+        ],
+        "candidate-exact-tuned": [
+          516.6309250568304,
+          517.8769289292908
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 499.6050917646732,
+        "candidate-exact-tuned": 517.2539269930605
+      },
+      "median_gain_percent": 3.532557117472379
+    },
+    {
+      "phase": "prefill",
+      "thinking": "high",
+      "concurrency": 1,
+      "input_tokens": 1536,
+      "metric": "effective_cold_prefill_input_tps",
+      "values": {
+        "baseline-exact1536": [
+          456.2669395017007,
+          421.7130961346858
+        ],
+        "candidate-exact-tuned": [
+          471.09695345909836,
+          467.28279291940225
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 438.9900178181932,
+        "candidate-exact-tuned": 469.1898731892503
+      },
+      "median_gain_percent": 6.879394552329954
+    },
+    {
+      "phase": "prefill",
+      "thinking": "high",
+      "concurrency": 1,
+      "input_tokens": 3072,
+      "metric": "effective_cold_prefill_input_tps",
+      "values": {
+        "baseline-exact1536": [
+          506.08242651831006,
+          506.1616513496919
+        ],
+        "candidate-exact-tuned": [
+          517.6370658367119,
+          518.4308370402086
+        ]
+      },
+      "medians": {
+        "baseline-exact1536": 506.122038934001,
+        "candidate-exact-tuned": 518.0339514384602
+      },
+      "median_gain_percent": 2.35356526452557
+    }
+  ]
+}

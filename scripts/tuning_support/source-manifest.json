@@ -1,0 +1,8 @@
+{
+  "benchmarks/serving.py": "f0ff96c6bb0b44b62e68818a5921694eb60eca5f87f3b06148cfb8fbea618139",
+  "benchmarks/deepseek_serving.py": "705ad7ee81af18476f2e7cfa947db8783809240c9c8daccead05a89caaa902c2",
+  "src/silyx/__init__.py": "ce9d03b985ff311e30aed49a10d635bef9f882963964b5eac1cf115dc16a109c",
+  "src/silyx/adapters/__init__.py": "3a599b4b7d733828dc78ae07e71f75c7fcdc77e32155fdce7a2c0389afa670db",
+  "src/silyx/adapters/deepseek_phase_observer.py": "e97b7d5f12d9f40b31b47fb31e7898c86a3bc88cff59b3e2f97cdc2aaf64c387",
+  "src/silyx/adapters/deepseek_exl3_prefill.py": "44666c882e0085e5f634b88d3d5aefdbce5fa9e618b0ee968c914219c1bb177f"
+}

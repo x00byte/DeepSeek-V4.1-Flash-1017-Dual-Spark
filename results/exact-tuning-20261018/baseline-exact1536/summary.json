@@ -1,0 +1,1002 @@
+[
+  {
+    "phase": "decode",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 64,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 55.966025684053925,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 27,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 27,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 25,
+      "launched": 26,
+      "miss.reset": null,
+      "miss.unused": null
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 62,
+    "decode_seconds": 1.1078149509849027,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 0.4370683740125969,
+    "observed_client_interval_tps": [
+      56.89563089402644
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 64,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 63.06520883666358,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 26,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 26,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 24,
+      "launched": 25,
+      "miss.reset": 0,
+      "miss.unused": 1
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 62,
+    "decode_seconds": 0.983109406020958,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 1.1569872300024144,
+    "observed_client_interval_tps": [
+      64.0855133665071
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "off",
+    "concurrency": 8,
+    "repeat": 0,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 8,
+      "completion_token_counter_delta": 512,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 121.58125142864206,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 33,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 11,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 1,
+      "launched": 6,
+      "miss.reset": 0,
+      "miss.slots": 5,
+      "miss.unused": 0,
+      "skip.nograph": 27
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 493,
+    "decode_seconds": 4.054901509953197,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 2.472941977001028,
+    "observed_client_interval_tps": [
+      16.99764195387857,
+      15.538892364858665,
+      16.99951339253516,
+      15.70152735965716,
+      17.54275941362355,
+      10.65022637409044,
+      18.84741164659804,
+      16.552792170712266
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "off",
+    "concurrency": 8,
+    "repeat": 1,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 8,
+      "completion_token_counter_delta": 512,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 122.63345838557554,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 33,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 10,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 2,
+      "launched": 6,
+      "miss.reset": 0,
+      "miss.slots": 4,
+      "miss.unused": 0,
+      "skip.nograph": 27
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 495,
+    "decode_seconds": 4.036418824980501,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 2.496508978016209,
+    "observed_client_interval_tps": [
+      17.137653997100575,
+      15.611920505623285,
+      17.126676916496308,
+      10.631467466857073,
+      17.665095777203547,
+      15.610815239728733,
+      18.97293508735381,
+      16.73394778795721
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 64,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 88.08182153718928,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 15,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 14,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 12,
+      "launched": 13,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 1,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 63,
+    "decode_seconds": 0.715244063991122,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 0.4410162679851055,
+    "observed_client_interval_tps": [
+      88.09495220087723
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 64,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 93.71349454598851,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 15,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 14,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 12,
+      "launched": 13,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 1,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 63,
+    "decode_seconds": 0.6722617730265483,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 0.44224407098954543,
+    "observed_client_interval_tps": [
+      93.6842586022869
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "high",
+    "concurrency": 8,
+    "repeat": 0,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 8,
+      "completion_token_counter_delta": 512,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 214.29013878543606,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 6,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 10,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 2,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 1,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 1,
+      "skip.nograph": 13
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 489,
+    "decode_seconds": 2.2819528830004856,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 1.4662291105196346,
+    "observed_client_interval_tps": [
+      27.63873556164675,
+      22.702263464929445,
+      21.054872232387847,
+      19.823356618183368,
+      19.800887710653623,
+      19.816198032075235,
+      31.555189268916262,
+      27.618361974153768
+    ]
+  },
+  {
+    "phase": "decode",
+    "thinking": "high",
+    "concurrency": 8,
+    "repeat": 1,
+    "output_cap": 64,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 8,
+      "completion_token_counter_delta": 512,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": 194.1088445341051,
+    "pure_decode_verified": true,
+    "effective_cold_prefill_input_tps": null,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 7,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 9,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 2,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 1,
+      "miss.reset": 0,
+      "miss.slots": 1,
+      "miss.unused": 0,
+      "skip.nograph": 13
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 501,
+    "decode_seconds": 2.581026130996179,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 2.4713118090003263,
+    "observed_client_interval_tps": [
+      24.413994323866184,
+      27.918891563020818,
+      25.726383887833425,
+      24.410420272250036,
+      15.503423624752578,
+      24.42487549199667,
+      27.898205399846596,
+      24.423599693840785
+    ]
+  },
+  {
+    "phase": "prefill",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 464.60426473698277,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 3.3060393900377676,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 461.95443512866296,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 3.3250032539945096,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 500.9317821160464,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 6.132571558991913,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "off",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 498.2784014133,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 6.165228095953353,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 456.2669395017007,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 3.3664503539912403,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 421.7130961346858,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 3.642286696995143,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 0,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 506.08242651831006,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 6.0701574269915,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  },
+  {
+    "phase": "prefill",
+    "thinking": "high",
+    "concurrency": 1,
+    "repeat": 1,
+    "output_cap": 1,
+    "outside_clients": {
+      "verified": true,
+      "idle_before_after": true,
+      "request_counter_delta": 1,
+      "completion_token_counter_delta": 1,
+      "backend_identity_stable": true,
+      "response_ids_unique": true
+    },
+    "cap_satisfied": true,
+    "raw_decode_aggregate_tps": null,
+    "pure_decode_verified": false,
+    "effective_cold_prefill_input_tps": 506.1616513496919,
+    "graph_stat_deltas": {
+      "target_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 1,
+        "warm": 0,
+        "warm_s": 0.0
+      },
+      "draft_graphs": {
+        "dropped": 0,
+        "eager": 0,
+        "evicted": 0,
+        "failed": 0,
+        "full": 0,
+        "lazy": 0,
+        "replays": 0,
+        "warm": 0,
+        "warm_s": 0.0
+      }
+    },
+    "draft_graph_max_slots": 4,
+    "speculative_draft_deltas": {
+      "hit": 0,
+      "launched": 0,
+      "miss.reset": 0,
+      "miss.slots": 0,
+      "miss.unused": 0,
+      "skip.nograph": 0
+    },
+    "decode_scope": "batch aggregate suffix after latest first queue emission; exact counts, includes finishing tails",
+    "decode_tokens": 0,
+    "decode_seconds": 0.0,
+    "prefill_unchanged_in_suffix": true,
+    "ttft_p50_seconds": 6.069207321037538,
+    "observed_client_interval_tps": [
+      null
+    ],
+    "cold_prefill_verified": true,
+    "prefill_scope": "client request-to-first-visible-output, cap1; includes scheduling and first verify"
+  }
+]

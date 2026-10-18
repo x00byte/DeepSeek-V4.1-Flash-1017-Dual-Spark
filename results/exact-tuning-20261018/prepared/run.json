@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "engine": "TensorFold",
+  "plan_sha256": "ec25741f3d6c45fc3d02460bb36f670aea31b8d3cd596c149f50d5f46b8922d6",
+  "status": "prepared",
+  "target_model": "LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw",
+  "revision": "afc7aa0aab98ee735c0f54e0a122019af1ac08f1",
+  "quality_scope": "same native prompts and full output token/text comparison; no broad quality claim"
+}

@@ -96,7 +96,7 @@ docker logs -f deepseek-v41-flash-1017-tensorfold
 ssh spark-b docker logs -f deepseek-v41-flash-1017-tensorfold
 ```
 
-The measured runtime announced eight slots, full exact prefill, a shared 524288-token pool and DSpark depth capped at three. Each request may use up to 262144 tokens, with admission subject to the shared pool and memory floor. TensorFold's session cache and prepared-cache writes are disabled in the published profile.
+The current profile uses eight slots, full exact prefill, a shared 1048576-token pool and DSpark depth capped at three. Each request may use up to 262144 tokens, with admission subject to the shared pool and memory floor. The archived throughput benchmarks used the earlier 524288-token pool. TensorFold's session cache and prepared-cache writes are disabled in the published profile.
 
 The TensorFold default is thinking on at effort 75. Requests override this with `chat_template_kwargs.enable_thinking=false`, or select effort 75 explicitly with `chat_template_kwargs.reasoning_effort=75`. Both modes are benchmarked.
 

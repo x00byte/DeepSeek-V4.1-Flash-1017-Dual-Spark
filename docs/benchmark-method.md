@@ -18,6 +18,10 @@ Clients were paused for isolated measurements. Startup and compilation are exclu
 
 ## Dashboard workloads on 2026-10-18
 
+These measurements used a 524,288-token shared pool. The later production
+capacity change to 1,048,576 tokens is a separate operational update; these
+figures were not rerun or relabelled as larger-pool performance results.
+
 The dashboard suite uses the installed port-11001 dashboard's unchanged
 `LlmClient` and `BenchManager`, imported by
 [`dashboard-benchmark.py`](../scripts/dashboard-benchmark.py). The manifest records
@@ -134,6 +138,8 @@ The archived tuning client and plans use the former API name
 `deepseek-v4.1-flash-1017-tensorfold`. Set `SERVED_NAME` to that value in
 `config/cluster.env` when replaying this unchanged historical snapshot. Normal
 deployments and the dashboard runner now default to `deepseek-flash`.
+Also restore `TF_DSV41_POOL_TOKENS=524288` in the tuning file for that historical
+profile; the current default allocates a larger production pool.
 
 Replay the exact archived plan against an idle observed service:
 

@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-18",
+  "model": "deepseek-flash",
+  "pool_tokens": 1048576,
+  "previous_pool_tokens": 524288,
+  "context_tokens_per_request": 262144,
+  "request_slots": 8,
+  "started_utc": "2026-10-18T11:00:11Z",
+  "finished_utc": "2026-10-18T11:05:12Z",
+  "observation_seconds": 300.9,
+  "samples": 30,
+  "all_health_checks_passed": true,
+  "completed_requests_delta": 13,
+  "output_tokens_delta": 7092,
+  "request_errors_delta": 0,
+  "round_errors_delta": 0,
+  "min_node_memory_available_gib": {
+    "head": 6.38,
+    "worker": 7.24
+  },
+  "scope": "Five-minute observation during production traffic, plus a separate synthetic telemetry check; not an isolated throughput benchmark or full-pool occupancy test.",
+  "schema": 1,
+  "memory_floor_target_gib": 5,
+  "memory_floor_hard_gib": 4,
+  "kv_dtype": "fp8",
+  "boot_pool_pages": 4096,
+  "dashboard_check": {
+    "input_tokens": 8432,
+    "output_tokens": 192,
+    "snapshots": 21,
+    "backend": "tensorfold",
+    "live_prefill_during_request": true,
+    "live_decode_during_request": true,
+    "regression_tests_passed": 14,
+    "patch_sha256": "ea2b7140718765f20a54c2e32e6c603909aa17624496db3953beeec292992bd4"
+  }
+}

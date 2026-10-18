@@ -9,10 +9,26 @@ The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek
 The TensorFold API model name is **`deepseek-flash`** (`GET /v1/models`).
 Benchmark archives retain the model name used when measured.
 
+## Production capacity: 2026-10-18
+
+The current TensorFold default uses **1,048,576 shared KV-cache tokens** across
+eight request slots, with a **262,144-token limit per request**. The FP8 paged
+pool occupies about **1.75 GiB per node**, adding 0.87 GiB per node over the
+previous 524,288-token pool. The 5 GiB target and 4 GiB hard admission floors
+remain enabled. This increases concurrent context capacity.
+
+During five minutes of production traffic, **13 requests completed with no
+request errors or failed execution rounds**. [Operational verification](results/production-pool-20261018.json).
+
+The dashboard now reads TensorFold's native metrics and live health progress for
+prefill and decode rates. [Dashboard integration and patch](docs/dashboard-integration.md#live-tensorfold-rates).
+
 ## Dashboard benchmarks: 2026-10-18
 
 Tuned TensorFold on two GB10 systems. Thinking off, temperature zero; code, prose,
 structured output and prefill each ran separately, with two isolated passes.
+These archived measurements used the **524,288-token shared pool**, before the
+capacity increase; they have not been rerun with the larger pool.
 
 | Generation, aggregate output tok/s | C1 | C2 | C4 | C8 |
 | --- | ---: | ---: | ---: | ---: |
@@ -196,7 +212,7 @@ This repository distributes the integration recipe, source patches and benchmark
 
 ## Credits
 
-- [Anemll dual-Spark dashboard](https://github.com/anemll/dspark-vllm-gx10) and [MiaAI sparkDash](https://github.com/MiaAI-Lab/sparkDash): the port-11001 dashboard prompts and benchmark protocol, used through the installed dashboard module.
+- [Anemll dual-Spark dashboard](https://github.com/anemll/dspark-vllm-gx10) and [MiaAI sparkDash](https://github.com/MiaAI-Lab/sparkDash): the port-11001 dashboard prompts, benchmark protocol and live metrics integration. The focused dashboard patch retains the upstream MIT notice.
 - [Jay Leaton's DeepSeek V4.1 TensorFold Spark recipe](https://github.com/jayleaton/deepseek-v41-tensorfold-spark): the DeepSeek TensorFold engine patches, packing format, tuning and deployment work.
 - [TensorFold](https://github.com/ashhart/TensorFold): the Python inference runtime, CUDA kernels and TensorFold brand mark.
 - [MiaAI's DeepSeek V4.1 EXL3 dual-Spark kit](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks): the vLLM runtime, file-backed Engram implementation, packing tools, chat template and sharing helpers.

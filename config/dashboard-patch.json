@@ -1,0 +1,14 @@
+{
+  "source": "https://github.com/anemll/dspark-vllm-gx10",
+  "scope": "Focused changes against the installed port-11001 dashboard; preserves its existing local integrations.",
+  "files": {
+    "server.py": {
+      "before_sha256": "a2f139e350aea7a83023900a2793e43b3621b1d2dbd8387ea6aaf60460dc5127",
+      "after_sha256": "f9e9450b927246c1f8706b39db1f3d2a81aeea5bf720b41239242e5eb85c84f0"
+    },
+    "index.html": {
+      "before_sha256": "95b8dbff8e09a43afa886dd7cea459abf4a47ad5941d6dec06b986436cb91c4e",
+      "after_sha256": "ae7d71f82c4bba416770c7161fd4b69008eeae1d3205c993a86df65fb3638f79"
+    }
+  }
+}

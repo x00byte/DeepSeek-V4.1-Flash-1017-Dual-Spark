@@ -6,6 +6,9 @@ A pinned deployment recipe for [`LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bp
 
 The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek family patches and the small 1017 adaptations in this repository. The upstream Zig engine and 2.8bpw pack are separate deployment paths. Results here identify the engine, weights, thinking mode and measurement conditions explicitly.
 
+The TensorFold API model name is **`deepseek-flash`** (`GET /v1/models`).
+Benchmark archives retain the model name used when measured.
+
 ## Dashboard benchmarks: 2026-10-18
 
 Tuned TensorFold on two GB10 systems. Thinking off, temperature zero; code, prose,
@@ -177,11 +180,11 @@ Run one engine at a time with other API clients paused:
 
 ```bash
 python scripts/benchmark.py \
-  --model deepseek-v4.1-flash-1017-tensorfold --label tensorfold \
+  --model deepseek-flash --label tensorfold \
   --thinking off --input-lines 27 --output-tokens 64 --repeats 1 --skip-warmup --out results/raw-local/tensorfold-off
 
 python scripts/benchmark.py \
-  --model deepseek-v4.1-flash-1017-tensorfold --label tensorfold \
+  --model deepseek-flash --label tensorfold \
   --thinking 75 --input-lines 27 --output-tokens 64 --repeats 1 --skip-warmup --out results/raw-local/tensorfold-thinking75
 ```
 

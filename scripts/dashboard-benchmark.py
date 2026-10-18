@@ -26,7 +26,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--features', type=Path, required=True)
     parser.add_argument('--base', default='http://127.0.0.1:8888')
-    parser.add_argument('--model', default='deepseek-v4.1-flash-1017-tensorfold')
+    parser.add_argument('--model', default='deepseek-flash')
     parser.add_argument('--repeats', type=int, default=2, choices=(1,2,3))
     parser.add_argument('--out', type=Path, required=True)
     args=parser.parse_args()

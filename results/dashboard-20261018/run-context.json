@@ -18,5 +18,6 @@
   "scripts_sha256": {
     "dashboard-benchmark.py": "e20c25ad157efa0f64664edd75f2b6adb0c0824a267c6cdd0c74a0fbab606e79",
     "dashboard-report.py": "73ab4ed226fd869f198b8998dc938e0addcab557a823ac2eeb209f8dea41d89b"
-  }
+  },
+  "scripts_revision": "2f879d9d7a4d8c477a0a3d9bc715adb10c00e1cf"
 }

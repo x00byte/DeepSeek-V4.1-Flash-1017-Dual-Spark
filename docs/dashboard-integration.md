@@ -5,7 +5,7 @@ The deployment uses a dashboard on port 11001 and a separate inference API on 88
 | Profile | Runtime | Served model ID |
 | --- | --- | --- |
 | `deepseek` | vLLM | `deepseek-v4.1-flash-1017-exl3` |
-| `deepseek-tensorfold` | TensorFold Python | `deepseek-v4.1-flash-1017-tensorfold` |
+| `deepseek-tensorfold` | TensorFold Python | `deepseek-flash` |
 
 Each profile has its own launcher, runtime image and container name. Both map to the same checkpoint and official 1017 Engram source. Worker readiness checks the shared NFS volumes and exact file sizes instead of requesting a second full checkpoint copy on worker NVMe.
 

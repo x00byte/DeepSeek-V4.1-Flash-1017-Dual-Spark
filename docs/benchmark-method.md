@@ -130,6 +130,11 @@ PYTHONPATH=/tuning/src:/tuning python -m silyx.adapters.deepseek_phase_observer 
   --check-sources /usr/local/lib/python3.12/dist-packages/tensorfold
 ```
 
+The archived tuning client and plans use the former API name
+`deepseek-v4.1-flash-1017-tensorfold`. Set `SERVED_NAME` to that value in
+`config/cluster.env` when replaying this unchanged historical snapshot. Normal
+deployments and the dashboard runner now default to `deepseek-flash`.
+
 Replay the exact archived plan against an idle observed service:
 
 ```bash

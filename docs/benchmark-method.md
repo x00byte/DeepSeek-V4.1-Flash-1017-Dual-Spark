@@ -16,6 +16,59 @@ The runner saves per-request JSONL, CSV summaries, prompt hashes, token counts, 
 
 Clients were paused for isolated measurements. Startup and compilation are excluded. A preliminary vLLM run overlapped its automatic post-ready warmup; those samples are excluded. The quick matrix does not run an additional per-case warmup; first-use scheduling or specialization overhead may remain. Weight reads use a read-only NFS export over the fabric; active Engram lookup uses rank-local NVMe. Prepared-cache writes and session reuse are disabled for TensorFold. No model weights, credentials or private user prompts are distributed with these results.
 
+## Dashboard workloads on 2026-10-18
+
+The dashboard suite uses the installed port-11001 dashboard's unchanged
+`LlmClient` and `BenchManager`, imported by
+[`dashboard-benchmark.py`](../scripts/dashboard-benchmark.py). The manifest records
+the exact `features.py` SHA-256. The explicit served DeepSeek model ID avoids
+depending on the dashboard's model-label detection.
+
+Code, prose, structured output and prefill run as separate jobs, twice each,
+sequentially against the retained TensorFold profile. Thinking is disabled and
+temperature is zero. Each decode job performs one untimed eight-token warmup,
+then barrier-released C1, C2, C4 and C8 waves with a 400-token output cap.
+The prompts request Python clamp functions, a hash-map explanation, or counting
+from 1 to 200. Structured output is a counting workload without schema enforcement.
+Concurrent prompts carry the dashboard's stream-number suffix.
+Code and prose reached 400 output tokens per timed request. Structured requests
+produced 50–400 tokens: the stream suffix sometimes led the model to return a
+partition of the counting sequence. Those actual lengths and finishing tails are
+part of this dashboard workload; it is not a fixed-length structured decode test.
+
+The dashboard output rate is all actual completion tokens divided by the window
+from the earliest first visible SSE content to the latest last visible content.
+It includes first tokens and can include interleaved prefill at C2–C8. This differs
+from the exact-tuning decode-only suffix below; their rates are not directly
+comparable. Per-stream token counts and TTFT remain in the raw job records.
+
+Prefill runs separately at C1 with one output token and a unique prefix for each
+size. Dashboard targets are approximately 1,024, 4,096, 16,384 and 65,536 tokens;
+the tables report actual server-tokenized input counts. Effective input throughput
+is actual input tokens divided by request-to-first-visible-token latency, including
+scheduling and first-token delivery. Session storage is disabled, cache-hit deltas
+are zero, and executed-prefill/finalization counters must match all four requests.
+Kernel and graph caches remain warm; “cold prefill” refers to prompt reuse.
+
+Every job must start and finish idle, supply actual usage for every request, and
+match server request/output counters exactly. Jobs with outside traffic are
+excluded. Results are medians of two passes on one loaded profile, with ranges in
+`summary.json`; they do not measure sustained throughput or generation quality.
+The dashboard's vLLM-only speculation metric remains null for TensorFold.
+
+With other API clients paused, provide the installed dashboard module explicitly:
+
+```bash
+python scripts/dashboard-benchmark.py \
+  --features /path/to/dashboard/features.py \
+  --out results/raw-local/dashboard-recheck
+python scripts/dashboard-report.py results/raw-local/dashboard-recheck
+```
+
+The runner does not vendor or modify the external dashboard module. Raw jobs,
+request prompts, output text, usage, health snapshots and the manifest are retained
+in [`results/dashboard-20261018`](../results/dashboard-20261018).
+
 ## Exact tuning on 2026-10-18
 
 The [retained comparison](../results/exact-tuning-20261018/comparison.json)
@@ -98,3 +151,8 @@ The workload and measurement scripts accompany this recipe. Runtime implementati
 The retained Silyx host observer/client snapshot and combined-profile screening
 apply lessons from the GLM experiments; inference and all four tuning controls
 remain Jay Leaton's TensorFold DeepSeek implementation, with its existing notices.
+
+Dashboard prompts and benchmark protocol come from the installed
+[Anemll dual-Spark dashboard](https://github.com/anemll/dspark-vllm-gx10), with
+[MiaAI sparkDash](https://github.com/MiaAI-Lab/sparkDash) lineage. The external
+dashboard implementation retains its upstream notices and licenses.

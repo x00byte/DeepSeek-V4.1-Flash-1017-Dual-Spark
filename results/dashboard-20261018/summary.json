@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "date": "2026-10-18",
+  "model": "deepseek-v4.1-flash-1017-tensorfold",
+  "backend": "TensorFold",
+  "thinking": false,
+  "temperature": 0,
+  "output_cap": 400,
+  "repeats": 2,
+  "source_features_sha256": "3e96b6ca4d1d4ba468a97ef1948c884fca43cc17d6b4682d6031c8a917fe3e8a",
+  "separate_jobs": 8,
+  "total_requests_including_warmup": 104,
+  "total_output_tokens_including_warmup": 29396,
+  "isolation_verified": true,
+  "cold_prefill_verified": true,
+  "decode": [
+    {
+      "workload": "code",
+      "concurrency": {
+        "1": {
+          "median_output_tps": 103.405,
+          "min_output_tps": 103.22,
+          "max_output_tps": 103.59,
+          "median_mean_ttft_ms": 393.45000000000005,
+          "prompt_tokens": [
+            101
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "2": {
+          "median_output_tps": 149.65,
+          "min_output_tps": 127.23,
+          "max_output_tps": 172.07,
+          "median_mean_ttft_ms": 619.3499999999999,
+          "prompt_tokens": [
+            108
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "4": {
+          "median_output_tps": 193.31,
+          "min_output_tps": 193.15,
+          "max_output_tps": 193.47,
+          "median_mean_ttft_ms": 1031.25,
+          "prompt_tokens": [
+            108
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "8": {
+          "median_output_tps": 267.005,
+          "min_output_tps": 265.3,
+          "max_output_tps": 268.71,
+          "median_mean_ttft_ms": 1776.6,
+          "prompt_tokens": [
+            108
+          ],
+          "output_tokens": [
+            400
+          ]
+        }
+      }
+    },
+    {
+      "workload": "prose",
+      "concurrency": {
+        "1": {
+          "median_output_tps": 59.05,
+          "min_output_tps": 58.97,
+          "max_output_tps": 59.13,
+          "median_mean_ttft_ms": 176.1,
+          "prompt_tokens": [
+            32
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "2": {
+          "median_output_tps": 84.955,
+          "min_output_tps": 84.27,
+          "max_output_tps": 85.64,
+          "median_mean_ttft_ms": 325.05,
+          "prompt_tokens": [
+            39
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "4": {
+          "median_output_tps": 110.065,
+          "min_output_tps": 110.0,
+          "max_output_tps": 110.13,
+          "median_mean_ttft_ms": 446.54999999999995,
+          "prompt_tokens": [
+            39
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "8": {
+          "median_output_tps": 139.07999999999998,
+          "min_output_tps": 138.17,
+          "max_output_tps": 139.99,
+          "median_mean_ttft_ms": 802.2,
+          "prompt_tokens": [
+            39
+          ],
+          "output_tokens": [
+            400
+          ]
+        }
+      }
+    },
+    {
+      "workload": "structured",
+      "concurrency": {
+        "1": {
+          "median_output_tps": 91.035,
+          "min_output_tps": 89.09,
+          "max_output_tps": 92.98,
+          "median_mean_ttft_ms": 162.8,
+          "prompt_tokens": [
+            25
+          ],
+          "output_tokens": [
+            400
+          ]
+        },
+        "2": {
+          "median_output_tps": 131.59,
+          "min_output_tps": 130.68,
+          "max_output_tps": 132.5,
+          "median_mean_ttft_ms": 291.75,
+          "prompt_tokens": [
+            32
+          ],
+          "output_tokens": [
+            200
+          ]
+        },
+        "4": {
+          "median_output_tps": 127.41,
+          "min_output_tps": 126.87,
+          "max_output_tps": 127.95,
+          "median_mean_ttft_ms": 415.85,
+          "prompt_tokens": [
+            32
+          ],
+          "output_tokens": [
+            100,
+            400
+          ]
+        },
+        "8": {
+          "median_output_tps": 166.53,
+          "min_output_tps": 165.68,
+          "max_output_tps": 167.38,
+          "median_mean_ttft_ms": 645.0,
+          "prompt_tokens": [
+            32
+          ],
+          "output_tokens": [
+            50,
+            100,
+            120,
+            200,
+            400
+          ]
+        }
+      }
+    }
+  ],
+  "prefill": [
+    {
+      "target_tokens": 1024,
+      "actual_prompt_tokens": [
+        1130,
+        1131
+      ],
+      "median_ttft_ms": 2377.8,
+      "median_input_tps": 475.65,
+      "min_input_tps": 466.6,
+      "max_input_tps": 484.7
+    },
+    {
+      "target_tokens": 4096,
+      "actual_prompt_tokens": [
+        4552,
+        4553
+      ],
+      "median_ttft_ms": 7299.5,
+      "median_input_tps": 623.7,
+      "min_input_tps": 623.6,
+      "max_input_tps": 623.8
+    },
+    {
+      "target_tokens": 16384,
+      "actual_prompt_tokens": [
+        18211
+      ],
+      "median_ttft_ms": 21151.25,
+      "median_input_tps": 861.0,
+      "min_input_tps": 860.0,
+      "max_input_tps": 862.0
+    },
+    {
+      "target_tokens": 65536,
+      "actual_prompt_tokens": [
+        72811,
+        72814
+      ],
+      "median_ttft_ms": 78379.15,
+      "median_input_tps": 929.0,
+      "min_input_tps": 923.0,
+      "max_input_tps": 935.0
+    }
+  ],
+  "decode_scope": "dashboard observed aggregate: all completion tokens divided by earliest-first to latest-last visible SSE; may include interleaved prefill at concurrency>1",
+  "prefill_scope": "C1 actual input tokens divided by request-to-first-visible-token latency, output cap1; unique prefix per size",
+  "limitations": [
+    "2 passes on one loaded profile",
+    "400-token output cap; no sustained or quality claim",
+    "structured means counting1..200, without a schema constraint",
+    "prefill targets are approximate; actual counts are authoritative"
+  ]
+}

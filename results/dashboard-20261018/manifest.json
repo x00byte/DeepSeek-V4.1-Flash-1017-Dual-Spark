@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-18",
+  "model": "deepseek-v4.1-flash-1017-tensorfold",
+  "features_sha256": "3e96b6ca4d1d4ba468a97ef1948c884fca43cc17d6b4682d6031c8a917fe3e8a",
+  "backend": "TensorFold",
+  "thinking": false,
+  "temperature": 0,
+  "output_cap": 400,
+  "concurrencies": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "prefill_targets": [
+    1024,
+    4096,
+    16384,
+    65536
+  ],
+  "repeats": 2,
+  "separate_job_order": [
+    "code",
+    "prose",
+    "structured",
+    "prefill"
+  ],
+  "metric": "unchanged dashboard BenchManager observed streaming rate",
+  "source": "local Anemll dashboard/features.py; MiaAI sparkDash prompt/protocol lineage",
+  "status": "complete"
+}

@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-18",
+  "model": "deepseek-v4.1-flash-1017-tensorfold",
+  "hardware": "2 x NVIDIA GB10, TP2",
+  "local_image_id": "sha256:549e5cc62e518c34a58f9f5769ea2563bbb26898639d9caaa38372f6677d0309",
+  "tuning": {
+    "TF_DSV41_EXPERT_BLOCK": "1536",
+    "TF_DSV41_DRAFT_GRAPH_SLOTS": "8",
+    "TF_DSV41_GRAPH_ROWS_MAX": "64",
+    "TF_DSV41_GRAPH_WARM": "all",
+    "TF_DSV41_PREFILL_CHUNK": "1536"
+  },
+  "profile": "config/tensorfold-knobs.env.example",
+  "runtime": "pinned Python TensorFold DeepSeek profile with host phase observer; checkpoint and Engrams unchanged",
+  "remote_api_ingress_temporarily_blocked": true,
+  "firewall_removed_after_suite": true,
+  "publication_scope": "Only the complete isolated suite is included; preliminary contaminated attempts are excluded.",
+  "scripts_sha256": {
+    "dashboard-benchmark.py": "e20c25ad157efa0f64664edd75f2b6adb0c0824a267c6cdd0c74a0fbab606e79",
+    "dashboard-report.py": "73ab4ed226fd869f198b8998dc938e0addcab557a823ac2eeb209f8dea41d89b"
+  }
+}

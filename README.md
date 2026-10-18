@@ -6,7 +6,40 @@ A pinned deployment recipe for [`LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bp
 
 The tested TensorFold path is its Python 0.6.0 engine with Jay Leaton's DeepSeek family patches and the small 1017 adaptations in this repository. The upstream Zig engine and 2.8bpw pack are separate deployment paths. Results here identify the engine, weights, thinking mode and measurement conditions explicitly.
 
-## Update: 2026-10-18
+## Dashboard benchmarks: 2026-10-18
+
+Tuned TensorFold on two GB10 systems. Thinking off, temperature zero; code, prose,
+structured output and prefill each ran separately, with two isolated passes.
+
+| Generation, aggregate output tok/s | C1 | C2 | C4 | C8 |
+| --- | ---: | ---: | ---: | ---: |
+| Code | 103.4 | 149.7 | 193.3 | 267.0 |
+| Prose | 59.1 | 85.0 | 110.1 | 139.1 |
+| Structured (counting) | 91.0 | 131.6 | 127.4 | 166.5 |
+
+Medians use the dashboard’s first-to-last streaming window and a **400-token output
+cap**. C2–C8 can include interleaved prefill. Code C2 ranged 127.2–172.1 tok/s.
+Structured counting produced 50–400 tokens per request, without schema enforcement.
+
+**Separate cold-prefill runs, C1 and one output token:**
+
+| Dashboard target | Actual input tokens | Median TTFT (s) | Input tok/s |
+| ---: | ---: | ---: | ---: |
+| ~1,024 | 1,130–1,131 | 2.38 | 475.7 |
+| ~4,096 | 4,552–4,553 | 7.30 | 623.7 |
+| ~16,384 | 18,211 | 21.15 | 861.0 |
+| ~65,536 | 72,811–72,814 | 78.38 | 929.0 |
+
+Input throughput includes scheduling and first-token delivery. Prompt reuse was
+disabled and cache-hit deltas were zero. All **104 requests** matched server
+counters. [Raw records and ranges](results/dashboard-20261018/summary.json) and
+[Protocol and reproduction](docs/benchmark-method.md#dashboard-workloads-on-2026-10-18).
+These workload rates use a different window from the tuning comparison below.
+
+<a id="update-2026-10-18"></a>
+
+<details>
+<summary>Exact tuning comparison: 2026-10-18</summary>
 
 The current exact TensorFold profile expands graph coverage and expert-pass
 capacity using the same checkpoint, Engrams, precision and existing kernels.
@@ -30,7 +63,10 @@ batch response delivery. No sustained-throughput or broad quality claim is made.
 [measurement scope and reproduction](docs/benchmark-method.md#exact-tuning-on-2026-10-18)
 and [retained settings](config/tensorfold-knobs.env.example).
 
-## Original cross-engine measurements
+</details>
+
+<details>
+<summary id="original-cross-engine-measurements">Original TensorFold and vLLM comparison</summary>
 
 The original cross-engine comparison below uses a different ledger workload and
 streaming window. Its C8 rates must not be compared directly with the new
@@ -52,6 +88,8 @@ Decode is **single-request C1 output tok/s**, measured after the first token and
 TensorFold leads single-request decode in both thinking modes. vLLM leads effective prefill. These are the best observed prefill rates from one short pass, not sustained-throughput estimates. [Full C1–C8 measurements and raw records](results/README.md) retain the complete comparison.
 
 These are short, single-pass endpoint measurements, not a quality evaluation or an estimate of sustained long-response performance. Both engines use the same checkpoint. See [the method](docs/benchmark-method.md) for decode-window rates, per-stream timing and limitations. Decode tests cap output at 64 tokens; separate prefill tests cap it at one token.
+
+</details>
 
 ## Hardware and storage
 
@@ -155,6 +193,7 @@ This repository distributes the integration recipe, source patches and benchmark
 
 ## Credits
 
+- [Anemll dual-Spark dashboard](https://github.com/anemll/dspark-vllm-gx10) and [MiaAI sparkDash](https://github.com/MiaAI-Lab/sparkDash): the port-11001 dashboard prompts and benchmark protocol, used through the installed dashboard module.
 - [Jay Leaton's DeepSeek V4.1 TensorFold Spark recipe](https://github.com/jayleaton/deepseek-v41-tensorfold-spark): the DeepSeek TensorFold engine patches, packing format, tuning and deployment work.
 - [TensorFold](https://github.com/ashhart/TensorFold): the Python inference runtime, CUDA kernels and TensorFold brand mark.
 - [MiaAI's DeepSeek V4.1 EXL3 dual-Spark kit](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks): the vLLM runtime, file-backed Engram implementation, packing tools, chat template and sharing helpers.

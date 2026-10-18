@@ -1,0 +1,564 @@
+{
+  "workload": "prose",
+  "repeat": 0,
+  "job": {
+    "id": "d181bf011460",
+    "kind": "decode",
+    "status": "done",
+    "createdAt": "2026-10-18T10:20:58.388301+00:00",
+    "config": {
+      "type": "prose",
+      "concurrencies": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "maxTokens": 400,
+      "temperature": 0,
+      "model": "deepseek-v4.1-flash-1017-tensorfold"
+    },
+    "progress": {
+      "done": 4,
+      "total": 4,
+      "message": "Running concurrency 8\u2026"
+    },
+    "levels": [
+      {
+        "concurrency": 1,
+        "streamsOk": 1,
+        "streamsFailed": 0,
+        "totalCompletionTokens": 400,
+        "aggregateDecodeTps": 58.97,
+        "meanTtftMs": 176.0,
+        "minTtftMs": 176.0,
+        "maxTtftMs": 176.0,
+        "perStream": [
+          {
+            "index": 0,
+            "tokens": 400,
+            "promptTokens": 32,
+            "ttftMs": 176.0,
+            "tps": 58.97
+          }
+        ],
+        "error": null,
+        "spec": null
+      },
+      {
+        "concurrency": 2,
+        "streamsOk": 2,
+        "streamsFailed": 0,
+        "totalCompletionTokens": 800,
+        "aggregateDecodeTps": 84.27,
+        "meanTtftMs": 325.1,
+        "minTtftMs": 210.6,
+        "maxTtftMs": 439.5,
+        "perStream": [
+          {
+            "index": 0,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 210.6,
+            "tps": 44.34
+          },
+          {
+            "index": 1,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 439.5,
+            "tps": 43.18
+          }
+        ],
+        "error": null,
+        "spec": null
+      },
+      {
+        "concurrency": 4,
+        "streamsOk": 4,
+        "streamsFailed": 0,
+        "totalCompletionTokens": 1600,
+        "aggregateDecodeTps": 110.13,
+        "meanTtftMs": 414.2,
+        "minTtftMs": 266.4,
+        "maxTtftMs": 562.1,
+        "perStream": [
+          {
+            "index": 0,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 561.7,
+            "tps": 28.11
+          },
+          {
+            "index": 1,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 266.4,
+            "tps": 28.24
+          },
+          {
+            "index": 2,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 266.7,
+            "tps": 28.41
+          },
+          {
+            "index": 3,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 562.1,
+            "tps": 28.6
+          }
+        ],
+        "error": null,
+        "spec": null
+      },
+      {
+        "concurrency": 8,
+        "streamsOk": 8,
+        "streamsFailed": 0,
+        "totalCompletionTokens": 3200,
+        "aggregateDecodeTps": 138.17,
+        "meanTtftMs": 841.0,
+        "minTtftMs": 205.6,
+        "maxTtftMs": 932.8,
+        "perStream": [
+          {
+            "index": 0,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 930.8,
+            "tps": 18.49
+          },
+          {
+            "index": 1,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 932.7,
+            "tps": 18.06
+          },
+          {
+            "index": 2,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 205.6,
+            "tps": 17.67
+          },
+          {
+            "index": 3,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 931.3,
+            "tps": 18.69
+          },
+          {
+            "index": 4,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 931.4,
+            "tps": 18.26
+          },
+          {
+            "index": 5,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 932.1,
+            "tps": 18.69
+          },
+          {
+            "index": 6,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 931.5,
+            "tps": 17.83
+          },
+          {
+            "index": 7,
+            "tokens": 400,
+            "promptTokens": 39,
+            "ttftMs": 932.8,
+            "tps": 18.59
+          }
+        ],
+        "error": null,
+        "spec": null
+      }
+    ],
+    "error": null,
+    "finishedAt": "2026-10-18T10:21:53.510779+00:00"
+  },
+  "isolation": {
+    "usage_complete": true,
+    "expected_requests": 16,
+    "recorded_requests": 16,
+    "request_counter_delta": 16,
+    "output_counter_delta": 6008,
+    "recorded_output_tokens": 6008,
+    "idle_after": true,
+    "verified": true
+  },
+  "health_before": {
+    "ok": true,
+    "mode": "basic",
+    "uptime_s": 1122.3,
+    "inflight": 0,
+    "oldest_s": 0.0,
+    "idle_s": 0.8,
+    "requests": 201,
+    "errors": 0,
+    "backend": "tensorfold",
+    "busy": false,
+    "requests_running": 0,
+    "requests_total": 201,
+    "prompt_tokens_total": 56074,
+    "completion_tokens_total": 48238,
+    "prefill_seconds_total": 0,
+    "decode_seconds_total": 1535.516,
+    "cached_tokens_total": 0,
+    "rounds_total": 281742,
+    "drafted_total": 0,
+    "accepted_total": 0,
+    "streams": {
+      "decoding": 0,
+      "prefilling": 0,
+      "max": 8
+    },
+    "context_length": 262144,
+    "deepseek_phase": {
+      "source_sha256": {
+        "families.deepseek_v41.cuda.batch": "040f41e9ce4ef8ff3ffd20e19e20d4648d1978d3beccdeb1b0b3481ae205d3ca",
+        "families.deepseek_v41.cuda.rounds": "c85302535305ae1046bf0aaffa368f0e74212ff21e7f8039606f010b281c0acb",
+        "families.glm5_next.spark.health": "6bd74b6970f83629bb770841e07d0428bd48d31f1c34f6168394b2fe218fc688"
+      },
+      "session_store_disabled": true,
+      "schema": 1,
+      "prefill_tokens": 55873,
+      "prefill_finalizations": 201,
+      "prefill_rounds": 113,
+      "decode_rounds": 3266,
+      "verified_rows": 52808,
+      "dspark_windows": 10037,
+      "lookup_windows": 1216,
+      "serial_windows": 33,
+      "rounds_started": 3347,
+      "rounds_completed": 3347,
+      "round_errors": 0,
+      "executor_active": false,
+      "verified_rows_histogram": {
+        "2": 116,
+        "4": 890,
+        "3": 92,
+        "1": 21,
+        "18": 37,
+        "32": 357,
+        "20": 129,
+        "6": 62,
+        "22": 23,
+        "31": 9,
+        "28": 61,
+        "27": 17,
+        "26": 30,
+        "17": 2,
+        "23": 26,
+        "21": 10,
+        "24": 37,
+        "15": 22,
+        "16": 343,
+        "13": 26,
+        "10": 49,
+        "8": 401,
+        "19": 19,
+        "25": 13,
+        "12": 114,
+        "5": 20,
+        "30": 14,
+        "35": 4,
+        "47": 2,
+        "52": 33,
+        "38": 1,
+        "69": 1,
+        "42": 1,
+        "39": 1,
+        "66": 4,
+        "54": 1,
+        "14": 42,
+        "7": 28,
+        "11": 23,
+        "9": 3,
+        "29": 9,
+        "40": 23,
+        "50": 5,
+        "48": 9,
+        "72": 2,
+        "96": 2,
+        "100": 8,
+        "44": 19,
+        "56": 20,
+        "92": 5,
+        "88": 3,
+        "34": 3,
+        "68": 7,
+        "67": 2,
+        "64": 8,
+        "80": 15,
+        "104": 18,
+        "36": 6,
+        "112": 2,
+        "116": 14,
+        "114": 2
+      },
+      "dspark_padded_slots_histogram": {
+        "1": 1231,
+        "8": 744,
+        "4": 582,
+        "2": 549
+      },
+      "target_graphs": {
+        "stats": {
+          "warm": 14,
+          "lazy": 1,
+          "replays": 3404,
+          "eager": 86,
+          "failed": 0,
+          "warm_s": 4.34,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 15,
+        "keys": [
+          "(1, 0)",
+          "(1, 1)",
+          "(12, 0)",
+          "(16, 0)",
+          "(2, 0)",
+          "(24, 0)",
+          "(3, 0)",
+          "(32, 0)",
+          "(4, 0)",
+          "(48, 0)",
+          "(5, 0)",
+          "(6, 0)",
+          "(64, 0)",
+          "(7, 0)",
+          "(8, 0)"
+        ],
+        "max_slots": 64
+      },
+      "draft_graphs": {
+        "stats": {
+          "warm": 3,
+          "lazy": 1,
+          "replays": 3799,
+          "eager": 1,
+          "failed": 0,
+          "warm_s": 0.25,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 4,
+        "keys": [
+          "(1, 5, 'full')",
+          "(2, 5, 'full')",
+          "(4, 5, 'full')",
+          "(8, 5, 'full')"
+        ],
+        "max_slots": 8
+      },
+      "speculative_draft": {
+        "launched": 3080,
+        "hit": 2390,
+        "miss.reset": 34,
+        "miss.unused": 122,
+        "miss.slots": 533,
+        "commit.differs": 13
+      }
+    }
+  },
+  "health_after": {
+    "ok": true,
+    "mode": "basic",
+    "uptime_s": 1178.3,
+    "inflight": 0,
+    "oldest_s": 0.0,
+    "idle_s": 0.9,
+    "requests": 217,
+    "errors": 0,
+    "backend": "tensorfold",
+    "busy": false,
+    "requests_running": 0,
+    "requests_total": 217,
+    "prompt_tokens_total": 56684,
+    "completion_tokens_total": 54246,
+    "prefill_seconds_total": 0,
+    "decode_seconds_total": 1799.3628,
+    "cached_tokens_total": 0,
+    "rounds_total": 343364,
+    "drafted_total": 0,
+    "accepted_total": 0,
+    "streams": {
+      "decoding": 0,
+      "prefilling": 0,
+      "max": 8
+    },
+    "context_length": 262144,
+    "deepseek_phase": {
+      "source_sha256": {
+        "families.deepseek_v41.cuda.batch": "040f41e9ce4ef8ff3ffd20e19e20d4648d1978d3beccdeb1b0b3481ae205d3ca",
+        "families.deepseek_v41.cuda.rounds": "c85302535305ae1046bf0aaffa368f0e74212ff21e7f8039606f010b281c0acb",
+        "families.glm5_next.spark.health": "6bd74b6970f83629bb770841e07d0428bd48d31f1c34f6168394b2fe218fc688"
+      },
+      "session_store_disabled": true,
+      "schema": 1,
+      "prefill_tokens": 56467,
+      "prefill_finalizations": 217,
+      "prefill_rounds": 121,
+      "decode_rounds": 3937,
+      "verified_rows": 60536,
+      "dspark_windows": 12475,
+      "lookup_windows": 1217,
+      "serial_windows": 38,
+      "rounds_started": 4023,
+      "rounds_completed": 4023,
+      "round_errors": 0,
+      "executor_active": false,
+      "verified_rows_histogram": {
+        "2": 164,
+        "4": 987,
+        "3": 148,
+        "1": 23,
+        "18": 40,
+        "32": 361,
+        "20": 132,
+        "6": 106,
+        "22": 33,
+        "31": 10,
+        "28": 78,
+        "27": 32,
+        "26": 56,
+        "17": 3,
+        "23": 39,
+        "21": 19,
+        "24": 57,
+        "15": 38,
+        "16": 354,
+        "13": 54,
+        "10": 70,
+        "8": 441,
+        "19": 24,
+        "25": 26,
+        "12": 144,
+        "5": 42,
+        "30": 23,
+        "35": 4,
+        "47": 2,
+        "52": 33,
+        "38": 1,
+        "69": 1,
+        "42": 1,
+        "39": 1,
+        "66": 4,
+        "54": 1,
+        "14": 76,
+        "7": 64,
+        "11": 45,
+        "9": 8,
+        "29": 19,
+        "40": 23,
+        "50": 5,
+        "48": 9,
+        "72": 2,
+        "96": 2,
+        "100": 8,
+        "44": 19,
+        "56": 20,
+        "92": 5,
+        "88": 3,
+        "34": 3,
+        "68": 7,
+        "67": 2,
+        "64": 8,
+        "80": 15,
+        "104": 18,
+        "36": 6,
+        "112": 2,
+        "116": 14,
+        "114": 2
+      },
+      "dspark_padded_slots_histogram": {
+        "1": 1421,
+        "8": 905,
+        "4": 746,
+        "2": 704
+      },
+      "target_graphs": {
+        "stats": {
+          "warm": 14,
+          "lazy": 1,
+          "replays": 4075,
+          "eager": 86,
+          "failed": 0,
+          "warm_s": 4.34,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 15,
+        "keys": [
+          "(1, 0)",
+          "(1, 1)",
+          "(12, 0)",
+          "(16, 0)",
+          "(2, 0)",
+          "(24, 0)",
+          "(3, 0)",
+          "(32, 0)",
+          "(4, 0)",
+          "(48, 0)",
+          "(5, 0)",
+          "(6, 0)",
+          "(64, 0)",
+          "(7, 0)",
+          "(8, 0)"
+        ],
+        "max_slots": 64
+      },
+      "draft_graphs": {
+        "stats": {
+          "warm": 3,
+          "lazy": 1,
+          "replays": 4487,
+          "eager": 1,
+          "failed": 0,
+          "warm_s": 0.25,
+          "full": 0,
+          "dropped": 0,
+          "evicted": 0
+        },
+        "on": true,
+        "held": 4,
+        "keys": [
+          "(1, 5, 'full')",
+          "(2, 5, 'full')",
+          "(4, 5, 'full')",
+          "(8, 5, 'full')"
+        ],
+        "max_slots": 8
+      },
+      "speculative_draft": {
+        "launched": 3750,
+        "hit": 3042,
+        "miss.reset": 36,
+        "miss.unused": 123,
+        "miss.slots": 548,
+        "commit.differs": 13
+      }
+    }
+  }
+}

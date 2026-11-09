@@ -208,43 +208,40 @@ Use the vLLM model ID `deepseek-v4.1-flash-1017-exl3` with the same arguments af
 
 ## GLP steering (optional)
 
-The TensorFold profile can serve under a [weightless](https://github.com/msuiche/weightless) GLP control vector: a
-small GGUF sidecar of per-layer unit directions (`glp.mode=project`, hook `residual_stream_post_layer`), projected
-off the widened mHC stream after every steered decoder layer, prefill and decode, inside the captured graphs.
-`patches/tensorfold-glp.patch` (applied by `scripts/fetch-sources.sh` after the 1017 patch) adds the fail-closed
-loader, the Triton projection and the engine wiring; with `GLP_FILE` unset the captured graphs are unchanged.
+The TensorFold profile supports [weightless](https://github.com/msuiche/weightless) **GLP spec_version 3** rank-1
+vectors (`glp.mode=project`, `glp.hook_point=hc_fold_pre_engram`). After each layer's hyper-connection fold and
+before Engram, the engine computes `h = mean_c(stream)` over the four copies and subtracts `alpha * (h.d)d` from
+every copy. The attention output writer applies the same layer direction and alpha before the rank reduction;
+this companion projection is required by the v3 contract and runs in the normal and overlapped-prefill paths.
+`patches/tensorfold-glp.patch` adds the fail-closed loader, Triton projection and engine wiring. With `GLP_FILE`
+unset, the captured graphs are unchanged.
 
-Steering geometry for this checkpoint: stream width 20,480 (`hc_mult` 4 × hidden 5,120). `direction.N` applies
-at zero-based layer `N`; the steerable sites are `direction.1`..`direction.38`. `direction.39` is refused: the
-last block's mHC post is fused into the final norm kernel and has no steerable site. Rank-1 vectors, one scalar
-alpha; rank-k files and alpha multipliers are refused, never partially applied.
+Directions have hidden width 5,120 per copy, not the flattened 20,480-wide stream. `direction.N` applies at
+zero-based layer `N`; supported fold sites are `direction.1`..`direction.38`. `direction.39` is refused because
+this engine fuses the last fold into final normalization. Rank-k files and alpha multipliers are refused, never
+partially applied.
 
 The published
-[`GLP-39 L1-39 a0.75`](https://huggingface.co/msuiche/DeepSeek-V4.1-Flash-1017-abliterated-cyber-GLP-39-L1-39-a0.75)
-vector is hidden-width (5,120, the vLLM lane's geometry) and carries `direction.1`..`direction.39`, so this engine
-refuses it as shipped — fail-closed on the width gate. Serving the TensorFold profile steered needs a
-widened-stream (20,480) export without layer 39, or the fused-final kernel split for full coverage; both are
-follow-ups. The vLLM lane ([tonyd2wild's recipe](https://github.com/tonyd2wild/DeepSeek-V4.1-Flash-vLLM-DGX-Spark))
-steers the published vector's full layer set today.
+[`msuiche/DeepSeek-V4.1-Flash-1017-abliterated-cyber-GLP-27-L11-37-a3.5`](https://huggingface.co/msuiche/DeepSeek-V4.1-Flash-1017-abliterated-cyber-GLP-27-L11-37-a3.5)
+vector is directly compatible: a 544 KB rank-1 GLP v3 sidecar over layers 11–37 at the calibrated alpha 3.5.
+Older `residual_stream_post_layer` vectors, including GLP-39, are refused rather than applied at the wrong site.
 
-**Status: the GLP vector for the 1017 checkpoint is in preparation and not yet published.** The steering path ships
-inactive until `GLP_FILE` points at a sidecar. To check a sidecar offline (the same gates the boot applies):
+To validate a sidecar offline with the exact loader used by the engine:
 
 ```bash
-python3 tools/glpcheck.py /srv/vectors/dsv41-1017-glp.gguf
+python3 tools/glpcheck.py /srv/vectors/glp.deepseek-v41-flash-1017-GLP-27-L11-37-a3.5.gguf
 ```
 
-To serve steered once a vector lands, put the file at the same host path on both nodes and set it in
-`config/cluster.env` (`GLP_ALPHA` overrides the file's `glp.alpha_default`):
+Put the same file at the same host path on both nodes and set it in `config/cluster.env`:
 
 ```bash
-GLP_FILE=/srv/vectors/dsv41-1017-glp.gguf
+GLP_FILE=/srv/vectors/glp.deepseek-v41-flash-1017-GLP-27-L11-37-a3.5.gguf
 ```
 
-`cluster.py check` re-validates the file and verifies the worker's copy exists; at boot the engine hashes it into
-the rank settings fingerprint, so two different copies refuse to start rather than serve divergent streams. The
-vLLM profile is not steered by this patch — it needs a `deepseek_v41` adapter for the weightless vLLM plugin,
-which does not exist yet. Unlike every other setting here, steering changes the replies; that is its point.
+`GLP_ALPHA` optionally overrides the file's calibrated default. `cluster.py check` re-validates the file and
+verifies the worker's copy exists; at boot the engine hashes it into the rank settings fingerprint, so two
+different copies refuse to start rather than serve divergent streams. This patch applies only to the TensorFold
+profile; the vLLM profile uses the separate `deepseek_v41` adapter in the weightless repository.
 
 ## Scope and attribution
 

@@ -1,14 +1,11 @@
-diff --git upstream/src/tensorfold/families/deepseek_v41/cuda/engine.py local/src/tensorfold/families/deepseek_v41/cuda/engine.py
-index 0e41507..74ee846 100644
 --- upstream/src/tensorfold/families/deepseek_v41/cuda/engine.py
 +++ local/src/tensorfold/families/deepseek_v41/cuda/engine.py
-@@ -200,14 +200,41 @@ class Dsv41Engine:
+@@ -200,14 +200,40 @@
          from . import vision as vision_mod
  
          bias_vl = os.environ.get("TF_DSV41_BIAS_VL", "").strip()
-+        # GLP steering (glp.py): TF_DSV41_GLP names the sidecar (one container path, the same on both ranks). The
-+        # file is read and validated here so a bad one fails the boot before any weight work; its hash joins the
-+        # settings fingerprint below, so ranks carrying different files refuse to start.
++        # Read and fingerprint the sidecar before any weight work. Different ranks carrying different vectors
++        # refuse to meet; an unset path keeps steering out of every captured graph.
 +        import math
 +
 +        glp_table = None
@@ -18,7 +15,7 @@ index 0e41507..74ee846 100644
 +        if glp_path:
 +            from . import glp as GLP
 +            glp_dirs, glp_alpha, glp_sha = GLP.load(glp_path, layers=cfg.num_hidden_layers,
-+                                                    width=cfg.hidden_size * cfg.hc_mult)
++                                                    width=cfg.hidden_size)
 +            alpha_env = os.environ.get("TF_DSV41_GLP_ALPHA", "").strip()
 +            if alpha_env:
 +                try:
@@ -27,11 +24,11 @@ index 0e41507..74ee846 100644
 +                    raise ValueError(f"TF_DSV41_GLP_ALPHA is a float, not {alpha_env!r}") from None
 +                if not math.isfinite(glp_alpha):
 +                    raise ValueError(f"TF_DSV41_GLP_ALPHA must be finite, not {alpha_env!r}")
-+            table = torch.zeros((cfg.num_hidden_layers, cfg.hidden_size * cfg.hc_mult), dtype=torch.float32)
++            table = torch.zeros((cfg.num_hidden_layers, cfg.hidden_size), dtype=torch.float32)
 +            for li, vec in glp_dirs.items():
 +                table[li] = torch.from_numpy(vec)
 +            glp_table = table.to(self.device)
-+            print(f"[tensorfold] GLP steering (weightless, mode=project, hook {GLP.HOOK}): {glp_path}, "
++            print(f"[tensorfold] GLP v3 steering (weightless, mode=project, hook {GLP.HOOK}): {glp_path}, "
 +                  f"{len(glp_dirs)} layers {min(glp_dirs)}..{max(glp_dirs)}, alpha {glp_alpha}", flush=True)
          mine = [context, chunk, int(serial_only), int(tm_ident[:7], 16), parallel, int(serving), pchunk,
 -                prefill_mm.tag_grid(), int(bool(bias_vl))]
@@ -46,32 +43,32 @@ index 0e41507..74ee846 100644
          key = fastboot.weights_key(self.model_dir, rank, 2, device=device, extra={"token_map": tm_ident})
  
          def build():
-@@ -234,6 +261,9 @@ class Dsv41Engine:
+@@ -234,6 +260,12 @@
                  "dspark", {**key, "part": "dspark"}, b, device))
          else:
              self.fw = SlotsForward(cfg, tree, **fw_args)
-+        if glp_table is not None:           # before any graph capture (``boot``); None: the graphs never see it
++        if glp_table is not None:
 +            self.fw.glp_dirs = glp_table
 +            self.fw.glp_alpha = glp_alpha
++            for blk in self.fw.blocks:
++                blk.glp_dirs = glp_table
++                blk.glp_alpha = glp_alpha
          del tree
          if bias_vl:                 # the image routing bias (the packs dropped it): both ranks route alike
              got = vision_mod.attach_bias_vl(self.fw.blocks, bias_vl)
-diff --git upstream/src/tensorfold/families/deepseek_v41/cuda/forward.py local/src/tensorfold/families/deepseek_v41/cuda/forward.py
-index 644a0a1..e10c08e 100644
 --- upstream/src/tensorfold/families/deepseek_v41/cuda/forward.py
 +++ local/src/tensorfold/families/deepseek_v41/cuda/forward.py
-@@ -175,6 +175,10 @@ class Forward:
+@@ -175,6 +175,9 @@
          if any(L < len(self.blocks) for L in cfg.engram_layer_ids) and (hasher is None or not self.engram_rows):
              raise ValueError("Engram layers need the hasher (token map) and this rank's row sources")
          self.keep_taps = taps
-+        # GLP steering (glp.py): the dense [layers, hc_mult * hidden] fp32 direction table and alpha, installed
-+        # by the engine before any graph capture; None keeps the apply out of the captured graphs entirely
-+        self.glp_dirs = None                # torch.Tensor | None; row N = GLP direction.N (zero-based layer N)
++        # Installed by the engine before graph capture. None keeps all steering out of the captured path.
++        self.glp_dirs = None
 +        self.glp_alpha = 0.0
          self.hc = seams.hc_ops(self.device, cfg)
          self.trace: dict | None = None      # {layer: streams after the block} of the last run, when a dict
          self.slots = [self.new_slot(contiguous) for _ in range(slots)]      # no rows yet: the pool's (bind)
-@@ -456,6 +460,7 @@ class Forward:
+@@ -456,6 +459,7 @@
          and its compressor has stored the rows (CED's encoder pass, ``replay``); ``entered``: the first block's site
          is already in ``st`` (the decoder replay starts at its attention)."""
  
@@ -79,62 +76,64 @@ index 644a0a1..e10c08e 100644
          from . import l2pf as L2
          from . import xmap as XM
          from . import xovl as XO
-@@ -474,6 +479,12 @@ class Forward:
+@@ -474,6 +478,11 @@
                          XO.post_only(ops, x, x, st.gathered, coefs[st.cur], tap)
                      elif st.gathered is not None:
                          ops.post_only(x, x, st.gathered, coefs[st.cur], tap)
 +                    if st.gathered is not None and self.glp_dirs is not None:
-+                        # GLP steering (glp.py): the post just applied completed zero-based layer blk.index - 1,
-+                        # whose direction sits in table row blk.index - 1 (direction.N IS zero-based layer N; a
-+                        # zero row is an exact no-op). Each rank steers its own copy of the replicated stream
-+                        # with the same table, so the ranks stay in lockstep.
-+                        GLP.glp_project(x, self.glp_dirs[blk.index - 1], self.glp_alpha)
++                        # direction.N steers the fold consuming zero-based layer N's FFN write. The fold runs
++                        # at the start of block N+1; project the mean of the four copies and subtract the same
++                        # term from each copy before Engram.
++                        GLP.glp_project(x, self.glp_dirs[blk.index - 1], self.glp_alpha, copies=cfg.hc_mult)
                      if blk.engram is not None:
                          B.engram(blk, x, rows[blk.index], None if st.image is None else st.image.keep)
                      pre_in = coefs[st.cur].pre if st.gathered is not None else None
-@@ -550,6 +561,9 @@ class Forward:
-         else:
-             self.hc.final(st.x, st.x, st.gathered, st.coefs[st.cur], self.norm, st.out, st.scratch,
-                           st.taps.get(len(self.blocks)))
-+        # GLP note (glp.py): the last block's post runs inside the fused final above (post + collapse + norm, one
-+        # kernel), so zero-based layer len(self.blocks) - 1 has no steerable site and glp.load refuses its
-+        # direction
-         self.hidden = st.scratch.c[:n]                                    # pre-norm (DSpark's confidence head)
-         if not logits:
-             return None
-diff --git upstream/src/tensorfold/families/deepseek_v41/cuda/glp.py local/src/tensorfold/families/deepseek_v41/cuda/glp.py
-new file mode 100644
-index 0000000..c323220
---- /dev/null
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/blocks.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/blocks.py
+@@ -99,6 +99,8 @@
+ 
+     def __init__(self, cfg: Config, lw: LayerW, device, world: int) -> None:
+         self.cfg, self.index, self.world = cfg, lw.index, world
++        self.glp_dirs = None
++        self.glp_alpha = 0.0
+         self.mode = cfg.attention_mode(lw.index)
+         self.ratio = cfg.compress_ratio(lw.index)
+         self.kv_source = cfg.kv_source(lw.index)
+@@ -251,9 +253,19 @@
+ 
+     A = blk.attn
+     if emit is None:
+-        return A.wo_b(z, out_dtype or N.ACC)
++        out = A.wo_b(z, out_dtype or N.ACC)
++        if blk.glp_dirs is not None:
++            # direction.N belongs to zero-based layer N. Projection is linear, so applying it to this rank's
++            # partial before reduction matches projecting the reduced writer; every rank uses the same table.
++            from . import glp as GLP
++            GLP.glp_project(out, blk.glp_dirs[blk.index], blk.glp_alpha)
++        return out
+     for a, b in emit.spans_of(z.shape[0]):
+-        emit.send(a, b, A.wo_b(z[a:b], out_dtype or N.ACC))
++        out = A.wo_b(z[a:b], out_dtype or N.ACC)
++        if blk.glp_dirs is not None:
++            from . import glp as GLP
++            GLP.glp_project(out, blk.glp_dirs[blk.index], blk.glp_alpha)
++        emit.send(a, b, out)
+     return None
+ 
+ 
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/glp.py
 +++ local/src/tensorfold/families/deepseek_v41/cuda/glp.py
-@@ -0,0 +1,282 @@
-+"""GLP (GGUF Layer Projection) steering: a per-layer direction projected off the widened mHC stream.
+@@ -0,0 +1,236 @@
++"""GLP spec_version 3 steering at DeepSeek-V4.1's hyper-connection fold.
 +
-+A GLP sidecar is a small GGUF v3 file of per-decoder-layer unit directions (F32 tensors ``direction.<N>``, N the
-+1-based layer id, layer 0 inexpressible) under a ``glp.*`` metadata contract. With ``glp.mode=project`` every row of
-+the stream is edited after each steered layer: ``x <- x - alpha * (x . d) d``. The contract is fail-closed: a reader
-+that does not understand the file must refuse it, never fall back to adding (the same numbers under the wrong
-+operation produce no error, just wrong output).
++A sidecar carries rank-1 F32 ``direction.<N>`` tensors under ``glp.mode=project`` and
++``glp.hook_point=hc_fold_pre_engram``. For each row, the fold computes ``h = mean_c(stream_c)`` and every copy
++loses ``alpha * (h.d)d``. The attention output writer applies the same layer's direction and alpha to its partials;
++projection is linear, so projecting before the rank reduction is equivalent to projecting the reduced writer.
 +
-+Format, derivation and published vectors: https://github.com/msuiche/weightless (docs/spec/GLP.md) and
-+https://weightless.msuiche.com. The reference reader this file's gates mirror is
-+vllm-plugin/weightless_steer/container.py there.
-+
-+This lane implements the scalar case: rank-1 vectors, one alpha for every steered layer, the
-+``residual_stream_post_layer`` hook. Rank-k (subspace) files and the spec_version-2 alpha multipliers are refused
-+rather than partially applied. The apply itself is ``glp_project`` below (called from ``forward._layers``, right
-+after a block's mHC post lands on the stream); this module reads and validates.
-+
-+Hook geometry, DeepSeek-V4.1 specifics: the stream is the widened mHC stream ``[rows, hc_mult * hidden]`` (4 x
-+5,120 = 20,480 for the 1017 checkpoint), replicated on both ranks, so each rank projecting its own copy keeps the
-+ranks in lockstep. ``direction.N`` applies at zero-based layer ``N`` (the GLP container contract: N >= 1, N is the
-+layer index). Block ``i``'s post is applied at the top of block ``i + 1``'s iteration (``ops.post_only`` /
-+``XO.post_only``), so the steerable sites are layers 1..38; layer 39's post is fused into the final norm kernel
-+(``hc.final`` / ``XO.final``), so ``direction.39`` has no site and ``load`` refuses it.
-+
-+TF_DSV41_GLP names the sidecar (a container path, the same on both ranks); TF_DSV41_GLP_ALPHA overrides the file's
-+glp.alpha_default. The engine refuses to start when the file is missing, malformed, made for another hook or model,
-+or differs between the ranks.
++The reader is fail-closed: unsupported versions, hooks, ranks, alpha multipliers, geometries and final-layer
++vectors are refused rather than partially applied. ``TF_DSV41_GLP`` names the file and ``TF_DSV41_GLP_ALPHA``
++optionally overrides its calibrated default. An unset file leaves the captured graphs untouched.
 +"""
 +
 +from __future__ import annotations
@@ -146,17 +145,15 @@ index 0000000..c323220
 +
 +import numpy as np
 +
-+HOOK = "residual_stream_post_layer"       # the one site this engine steers (after the layer's mHC post)
++HOOK = "hc_fold_pre_engram"
 +
 +_SZ = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
 +_FM = {0: "<B", 1: "<b", 2: "<H", 3: "<h", 4: "<I", 5: "<i", 6: "<f",
 +       7: "<B", 10: "<Q", 11: "<q", 12: "<d"}
-+
 +_DIRECTION_RE = re.compile(r"direction\.(\d+)(?:\.(\d+))?")
 +
 +
 +def _int_meta(meta: dict, key: str, default: int) -> int:
-+    """An integer metadata value, coerced: real GGUF writers emit uint32, fixture files carry strings."""
 +    v = meta.get(key)
 +    if v is None or v == "":
 +        return default
@@ -164,7 +161,7 @@ index 0000000..c323220
 +
 +
 +def read_gguf(path: str) -> tuple[dict, dict[str, np.ndarray]]:
-+    """Minimal GGUF v3 reader for control vectors (F32 tensors only): (metadata, {tensor name: array})."""
++    """Read the GGUF v3 metadata and F32 tensors needed by the control-vector contract."""
 +
 +    with open(path, "rb") as f:
 +        data = f.read()
@@ -185,9 +182,9 @@ index 0000000..c323220
 +        key, off = rd_string(off)
 +        (vtype,) = struct.unpack_from("<I", data, off)
 +        off += 4
-+        if vtype == 8:    # string
++        if vtype == 8:
 +            val, off = rd_string(off)
-+        elif vtype == 9:  # array
++        elif vtype == 9:
 +            etype, cnt = struct.unpack_from("<IQ", data, off)
 +            off += 12
 +            if etype == 8:
@@ -230,74 +227,51 @@ index 0000000..c323220
 +
 +
 +def load(path: str, *, layers: int, width: int) -> tuple[dict[int, np.ndarray], float, int]:
-+    """Read and validate a GLP sidecar for a model of ``layers`` decoder layers and a ``width``-wide stream.
-+
-+    Returns ({layer id: unit F32 direction}, alpha, content hash). Every check here is a refusal, not a warning:
-+    a boot that asked for steering must never serve unsteered, and a file this lane cannot honour exactly must not
-+    be applied approximately. ``alpha`` is the file's glp.alpha_default (1.0 when absent); the caller applies the
-+    TF_DSV41_GLP_ALPHA override. ``layers`` is the block count (40): direction.1..direction.layers - 2 are
-+    accepted (their posts land inside the layer loop); direction.layers - 1 is refused with the fused-final
-+    note below.
-+    """
++    """Return ``{zero-based layer: unit direction}``, alpha and a rank-fingerprint hash, or refuse the file."""
 +
 +    with open(path, "rb") as f:
 +        raw = f.read()
-+    sha = int.from_bytes(hashlib.sha256(raw).digest()[:4], "little") & 0x7FFF_FFFF  # int32, for the rank fingerprint
++    sha = int.from_bytes(hashlib.sha256(raw).digest()[:4], "little") & 0x7FFF_FFFF
 +    meta, tensors = read_gguf(path)
 +
 +    mode = meta.get("glp.mode")
 +    if mode is None:
-+        raise ValueError(f"{path}: no glp.mode. Refusing to guess: an additive control vector and a projective one "
-+                         "are different operations.")
++        raise ValueError(f"{path}: no glp.mode; refusing to guess additive or projective semantics")
 +    if mode != "project":
-+        raise ValueError(f"{path}: glp.mode={mode!r}, but this engine only implements projective ablation "
-+                         "(x -= alpha*(x.d)d). Refusing to apply.")
++        raise ValueError(f"{path}: glp.mode={mode!r}; this engine implements only projective ablation")
 +
 +    file_hook = meta.get("glp.hook_point")
 +    if file_hook != HOOK:
-+        raise ValueError(f"{path}: glp.hook_point={file_hook!r} does not match this engine's hook ({HOOK}). "
-+                         "Refusing to apply at the wrong site.")
++        raise ValueError(f"{path}: glp.hook_point={file_hook!r}, expected {HOOK!r}")
++    derived_at = meta.get("glp.derived_at", HOOK)
++    if derived_at != HOOK:
++        raise ValueError(f"{path}: glp.derived_at={derived_at!r} does not match the fold's calibration site {HOOK!r}")
 +
-+    # The version gate: rank > 1 and the alpha-scaling keys change what a reader computes, so they are only valid
-+    # under spec_version 2. A version-1 reader would ignore keys it does not know and apply the file with the wrong
-+    # alphas -- silently. Refuse instead.
 +    version = _int_meta(meta, "glp.spec_version", 1)
-+    if version not in (1, 2):
-+        raise ValueError(f"{path}: glp.spec_version={meta.get('glp.spec_version')!r} is not implemented by this "
-+                         "reader (1 and 2 are). Refusing.")
-+    rank_declared = _int_meta(meta, "glp.rank", 1)
-+    if version == 1 and (rank_declared != 1 or "glp.dir_scales" in meta or "glp.layer_scales" in meta):
-+        raise ValueError(f"{path}: glp.rank={rank_declared} / alpha-scaling keys require glp.spec_version 2 "
-+                         "(this file declares 1). Refusing.")
-+
-+    # This lane serves one scalar alpha for every steered layer; a file carrying per-direction or per-layer
-+    # multipliers would be served at the wrong strength with no way to tell from the output.
++    if version != 3:
++        raise ValueError(f"{path}: glp.spec_version={version}; the fold and companion writer require version 3")
++    if _int_meta(meta, "glp.rank", 1) != 1:
++        raise ValueError(f"{path}: only rank-1 vectors are implemented; refusing a partially applied subspace")
 +    scales = sorted(set(meta) & {"glp.dir_scales", "glp.layer_scales"})
 +    if scales:
-+        raise ValueError(f"{path}: carries {', '.join(scales)}, which this engine does not implement. Refusing to "
-+                         "ignore alpha multipliers.")
-+    if rank_declared != 1:
-+        raise ValueError(f"{path}: glp.rank={rank_declared} (subspace) -- this engine implements rank 1 only. "
-+                         "Refusing to serve a partially applied subspace.")
++        raise ValueError(f"{path}: {', '.join(scales)} requires per-direction/per-layer alphas this engine does not implement")
 +
 +    alpha = float(meta.get("glp.alpha_default", 1.0))
 +    if not math.isfinite(alpha):
-+        raise ValueError(f"{path}: glp.alpha_default must be finite, not {meta.get('glp.alpha_default')!r}")
++        raise ValueError(f"{path}: glp.alpha_default must be finite")
 +
 +    grouped: dict[int, dict[int, np.ndarray]] = {}
 +    for name, arr in tensors.items():
-+        m = _DIRECTION_RE.fullmatch(name)
-+        if m is None:
++        match = _DIRECTION_RE.fullmatch(name)
++        if match is None:
 +            if name.startswith("direction."):
-+                raise ValueError(f"{path}: malformed tensor name {name!r} -- 'direction.' must be followed by an "
-+                                 "integer layer id")
++                raise ValueError(f"{path}: malformed direction tensor name {name!r}")
 +            continue
-+        idx, j = int(m.group(1)), int(m.group(2) or 0)
++        idx, j = int(match.group(1)), int(match.group(2) or 0)
 +        if idx < 1:
-+            raise ValueError(f"{path}: {name} is invalid; layer 0 cannot be expressed in this container")
++            raise ValueError(f"{path}: {name} is invalid; direction.0 cannot be expressed")
 +        if j != 0:
-+            raise ValueError(f"{path}: {name} names a rank-{j + 1} direction; this engine implements rank 1 only. "
-+                             "Refusing.")
++            raise ValueError(f"{path}: {name} is a rank-{j + 1} direction; only rank 1 is implemented")
 +        arr = np.asarray(arr, dtype=np.float32).reshape(-1)
 +        if not np.isfinite(arr).all() or not np.any(arr):
 +            raise ValueError(f"{path}: {name} must be finite and nonzero")
@@ -305,88 +279,305 @@ index 0000000..c323220
 +    if not grouped:
 +        raise ValueError(f"{path}: no direction.<N> tensors found")
 +
-+    # Cross-check the tensor names against the informational layer list: they are written from the same source, so a
-+    # disagreement means a broken exporter. The names are what execute; a one-layer shift degrades rather than fails
-+    # (adjacent-layer refusal directions are highly correlated), so this check is load-bearing.
 +    declared = meta.get("glp.layer_ids_zero_based")
 +    if declared:
 +        try:
 +            want = sorted(int(x) for x in declared.split(",") if x.strip())
 +        except ValueError:
-+            raise ValueError(f"{path}: glp.layer_ids_zero_based is not a comma list of integers: {declared!r}") \
-+                from None
++            raise ValueError(f"{path}: glp.layer_ids_zero_based is not a comma list of integers") from None
 +        if want and want != sorted(grouped):
-+            raise ValueError(f"{path}: glp.layer_ids_zero_based declares layers {want[0]}..{want[-1]} "
-+                             f"({len(want)} entries) but the direction tensors resolve to {sorted(grouped)[0]}.."
-+                             f"{sorted(grouped)[-1]} ({len(grouped)} entries). The tensor names are what get "
-+                             "applied, so this file would steer the wrong layers. Re-export it.")
++            raise ValueError(f"{path}: declared layers {want} do not match tensor layers {sorted(grouped)}")
 +
 +    dirs: dict[int, np.ndarray] = {}
 +    for idx, js in grouped.items():
 +        if not 0 <= idx < layers - 1:
-+            note = (": layer %d's mHC post is fused into the final norm kernel, so it has no steerable site "
-+                    "in this engine -- export the vector without it" % idx) if idx == layers - 1 else ""
-+            raise ValueError(f"{path}: direction layer {idx} has no steerable site in this engine ({layers} "
-+                             f"layers, steerable post-sites 1..{layers - 2}){note}")
++            note = (f": layer {idx}'s fold is fused into final normalization in this engine"
++                    if idx == layers - 1 else "")
++            raise ValueError(f"{path}: direction.{idx} has no implemented fold site{note}")
 +        vec = js[0].astype(np.float64)
 +        if vec.size != width:
-+            raise ValueError(f"{path}: direction layer {idx} is {vec.size} wide; this model's widened stream is "
-+                             f"{width} (hc_mult * hidden). Refusing to steer a different geometry.")
-+        # The published vectors ship unit directions; normalise anyway (in float64, so a finite but extreme f32
-+        # export cannot overflow its own squared norm) so no export can silently scale alpha.
++            raise ValueError(f"{path}: direction.{idx} is {vec.size} wide; expected hidden width {width}")
 +        norm = np.linalg.norm(vec)
 +        if not math.isfinite(norm) or norm <= 0:
-+            raise ValueError(f"{path}: direction layer {idx} must be finite and nonzero")
++            raise ValueError(f"{path}: direction.{idx} must be finite and nonzero")
 +        dirs[idx] = (vec / norm).astype(np.float32)
-+
 +    return dirs, alpha, sha
 +
 +
-+# -- the apply --------------------------------------------------------------------------------------------------
-+# torch / triton import lazily: the reader above also runs on GPU-less machines (tools/glpcheck.py's gates mirror
-+# it), and this module must stay importable there.
++def glp_project(x, drow, alpha: float, *, copies: int = 1) -> None:
++    """Project ``h = mean_c(x_c)`` off every copy in place, or a writer when ``copies=1``."""
 +
-+def glp_project(x, drow, alpha: float) -> None:
-+    """In place on x [R, hc_mult * D] bf16: project this layer's GLP direction off every row (drow fp32, unit)."""
++    import torch
++
++    if x.ndim != 2 or drow.ndim != 1:
++        raise ValueError("glp_project: x must be [rows, copies*hidden] and drow [hidden]")
++    rows, wide = x.shape
++    hidden = drow.numel()
++    if copies < 1 or wide != copies * hidden:
++        raise ValueError(f"glp_project: stream width {wide} != {copies} copies x hidden {hidden}")
++    if x.dtype not in (torch.bfloat16, torch.float32):
++        raise ValueError(f"glp_project: unsupported stream dtype {x.dtype}")
++    if not x.is_cuda:
++        stream = x.reshape(rows, copies, hidden)
++        mean = stream.to(torch.float32).mean(dim=1)
++        delta = (float(alpha) * (mean @ drow)).unsqueeze(-1) * drow
++        stream.sub_(delta.unsqueeze(1).to(x.dtype))
++        return
++    if hidden % 1024:
++        raise ValueError(f"glp_project: hidden width {hidden} is not a multiple of 1024 for the CUDA kernel")
 +
 +    global _KERNEL
-+    import torch                              # noqa: PLC0415 -- lazy, see above
-+
-+    if x.dtype is not torch.bfloat16:
-+        raise ValueError(f"glp_project: the stream is {x.dtype}, the kernel writes bf16 (N.ACT)")
-+    rows, wide = x.shape
-+    if wide % 1024:
-+        raise ValueError(f"glp_project: stream width {wide} is not a multiple of 1024")
-+    if _KERNEL is None:                       # built on first use (the eager warm-up, before any graph capture)
++    if _KERNEL is None:
 +        _KERNEL = _kernel()
-+    _KERNEL[(rows,)](x, drow, float(alpha), D=wide, BLOCK=1024, num_warps=4)
++    _KERNEL[(rows,)](x, drow, float(alpha), C=copies, D=hidden, BLOCK=1024, num_warps=4)
 +
 +
 +def _kernel():
-+    import triton                            # noqa: PLC0415 -- lazy, see above
-+    import triton.language as tl             # noqa: PLC0415
++    import triton
++    import triton.language as tl
 +
 +    @triton.jit
-+    def _glp_project(X, DIR, alpha, D: tl.constexpr, BLOCK: tl.constexpr):
-+        """Row r of the widened stream: x <- x - alpha * (x . d) d; the dot accumulates fp32 in fixed block order
-+        and the write-back rounds to bf16 explicitly, so both ranks compute identical bits. A zero DIR row is an
-+        exact no-op (bf16 -> fp32 -> bf16 is lossless), which keeps the captured graph identical for every layer
-+        set."""
-+
++    def _glp_project(X, DIR, alpha, C: tl.constexpr, D: tl.constexpr, BLOCK: tl.constexpr):
 +        r = tl.program_id(0)
 +        acc = 0.0
 +        for cb in tl.static_range(D // BLOCK):
 +            d = cb * BLOCK + tl.arange(0, BLOCK)
-+            x = tl.load(X + r * D + d).to(tl.float32)
-+            acc += tl.sum(x * tl.load(DIR + d), axis=0)
++            mean = tl.zeros([BLOCK], dtype=tl.float32)
++            for c in tl.static_range(C):
++                x = tl.load(X + r * C * D + c * D + d).to(tl.float32)
++                mean += x / C
++            acc += tl.sum(mean * tl.load(DIR + d), axis=0)
 +        coef = alpha * acc
 +        for cb in tl.static_range(D // BLOCK):
 +            d = cb * BLOCK + tl.arange(0, BLOCK)
-+            x = tl.load(X + r * D + d).to(tl.float32)
 +            v = tl.load(DIR + d)
-+            tl.store(X + r * D + d, (x - coef * v).to(tl.bfloat16))
++            for c in tl.static_range(C):
++                off = r * C * D + c * D + d
++                x = tl.load(X + off).to(tl.float32)
++                tl.store(X + off, (x - coef * v).to(X.dtype.element_ty))
 +
 +    return _glp_project
 +
 +
-+_KERNEL = None                                # the compiled kernel, built on first use (triton import-time optional)
++_KERNEL = None
+--- upstream/tests/test_dsv41_glp.py
++++ local/tests/test_dsv41_glp.py
+@@ -0,0 +1,218 @@
++# SPDX-License-Identifier: MIT
++"""GLP spec_version 3 loading, fold/writer math, and off-is-stock forward behavior."""
++
++from __future__ import annotations
++
++import struct
++from types import SimpleNamespace
++
++import numpy as np
++import pytest
++
++torch = pytest.importorskip("torch")
++pytestmark = pytest.mark.torch
++
++import dsv41_fakes as FK  # noqa: E402
++from tensorfold.families.deepseek_v41.cuda import blocks as B  # noqa: E402
++from tensorfold.families.deepseek_v41.cuda import glp as GLP  # noqa: E402
++from test_dsv41_forward import IDS, build, run, tp2  # noqa: E402
++
++
++def _string(value: str) -> bytes:
++    raw = value.encode()
++    return struct.pack("<Q", len(raw)) + raw
++
++
++def write_gguf(path, directions: dict[str, np.ndarray], **overrides):
++    meta = {
++        "glp.mode": "project",
++        "glp.hook_point": GLP.HOOK,
++        "glp.spec_version": 3,
++        "glp.alpha_default": 0.5,
++        "glp.rank": 1,
++        **overrides,
++    }
++    if "glp.layer_ids_zero_based" not in meta:
++        meta["glp.layer_ids_zero_based"] = ",".join(
++            str(i) for i in sorted({int(name.split(".")[1]) for name in directions})
++        )
++    types = {str: 8, int: 4, float: 6}
++    chunks = [b"GGUF", struct.pack("<IQQ", 3, len(directions), len(meta))]
++    for key, value in meta.items():
++        chunks += [_string(key), struct.pack("<I", types[type(value)])]
++        if isinstance(value, str):
++            chunks.append(_string(value))
++        elif isinstance(value, int):
++            chunks.append(struct.pack("<I", value))
++        else:
++            chunks.append(struct.pack("<f", value))
++    offset = 0
++    for name, values in directions.items():
++        chunks += [_string(name), struct.pack("<I", 1), struct.pack("<Q", values.size),
++                   struct.pack("<I", 0), struct.pack("<Q", offset)]
++        offset += values.nbytes
++    payload = b"".join(chunks)
++    payload += b"\0" * ((-len(payload)) % 32)
++    path.write_bytes(payload + b"".join(np.asarray(v, dtype="<f4").tobytes() for v in directions.values()))
++
++
++def vector(tmp_path, **overrides):
++    directions = {f"direction.{i}": np.ones(1024, dtype=np.float32) for i in (1, 11, 37)}
++    path = tmp_path / "control.gguf"
++    write_gguf(path, directions, **overrides)
++    return path
++
++
++def test_load_accepts_rank_one_v3_and_normalizes(tmp_path):
++    dirs, alpha, sha = GLP.load(str(vector(tmp_path)), layers=40, width=1024)
++    assert sorted(dirs) == [1, 11, 37]
++    assert alpha == 0.5
++    assert sha > 0
++    for direction in dirs.values():
++        assert np.allclose(direction, 1 / 32)
++
++
++@pytest.mark.parametrize("overrides, match", [
++    ({"glp.spec_version": 2}, "require version 3"),
++    ({"glp.hook_point": "residual_stream_post_layer"}, "expected"),
++    ({"glp.derived_at": "residual_stream_post_layer"}, "calibration site"),
++    ({"glp.mode": "add"}, "projective"),
++    ({"glp.dir_scales": "1.0"}, "alphas"),
++    ({"glp.layer_ids_zero_based": "1,11"}, "do not match"),
++])
++def test_load_refuses_incompatible_metadata(tmp_path, overrides, match):
++    with pytest.raises(ValueError, match=match):
++        GLP.load(str(vector(tmp_path, **overrides)), layers=40, width=1024)
++
++
++def test_load_refuses_final_layer_and_wrong_width(tmp_path):
++    path = tmp_path / "final.gguf"
++    write_gguf(path, {f"direction.{i}": np.ones(1024, dtype=np.float32) for i in (1, 11, 37, 39)})
++    with pytest.raises(ValueError, match="fused into final normalization"):
++        GLP.load(str(path), layers=40, width=1024)
++    path = tmp_path / "wrong.gguf"
++    write_gguf(path, {"direction.1": np.ones(512, dtype=np.float32)})
++    with pytest.raises(ValueError, match="expected hidden width 1024"):
++        GLP.load(str(path), layers=40, width=1024)
++
++
++def test_load_refuses_rank_two(tmp_path):
++    path = tmp_path / "rank2.gguf"
++    write_gguf(path, {"direction.1": np.ones(1024, dtype=np.float32),
++                      "direction.1.1": np.ones(1024, dtype=np.float32)}, **{"glp.rank": 2})
++    with pytest.raises(ValueError, match="only rank-1"):
++        GLP.load(str(path), layers=40, width=1024)
++
++
++def test_projection_matches_mean_over_copies_on_cpu():
++    g = torch.Generator().manual_seed(4)
++    hidden = 1024
++    direction = torch.randn(hidden, generator=g).float()
++    direction /= direction.norm()
++    for copies in (1, 4):
++        x = torch.randn(2, copies * hidden, generator=g).to(torch.bfloat16)
++        want = x.reshape(2, copies, hidden).float()
++        mean = want.mean(dim=1)
++        want = (want - (0.5 * (mean @ direction)).view(2, 1, 1) * direction).to(torch.bfloat16).float()
++        GLP.glp_project(x, direction, 0.5, copies=copies)
++        got = x.reshape(2, copies, hidden).float()
++        assert torch.allclose(got, want, atol=0.008, rtol=0.01)
++
++
++def test_zero_alpha_is_exact_noop():
++    x = torch.randn(2, 4 * 1024).to(torch.bfloat16)
++    want = x.clone()
++    direction = torch.ones(1024).float()
++    GLP.glp_project(x, direction, 0.0, copies=4)
++    assert torch.equal(x, want)
++
++
++def test_writer_partials_project_linearly_before_reduction():
++    g = torch.Generator().manual_seed(7)
++    direction = torch.randn(1024, generator=g).float()
++    direction /= direction.norm()
++    parts = [torch.randn(2, 1024, generator=g) for _ in range(2)]
++    full = parts[0] + parts[1]
++    want = full - (0.5 * (full @ direction)).view(2, 1) * direction
++    for part in parts:
++        GLP.glp_project(part, direction, 0.5)
++    assert torch.allclose(parts[0] + parts[1], want, atol=1e-5, rtol=1e-5)
++
++
++@pytest.mark.parametrize("split", [False, True])
++def test_wo_b_applies_companion_projection_in_normal_and_split_paths(split):
++    direction = torch.ones(1024).float() / 32
++    blk = SimpleNamespace(index=0, glp_dirs=direction.unsqueeze(0), glp_alpha=0.5,
++                          attn=SimpleNamespace(wo_b=lambda z, dtype: z.clone()))
++    x = torch.randn(2, 1024)
++    want = x - (0.5 * (x @ direction)).view(2, 1) * direction
++    if not split:
++        got = B._wo_b(blk, x, torch.float32, None)
++    else:
++        class Emit:
++            def __init__(self):
++                self.parts = []
++
++            def spans_of(self, n):
++                return [(0, 1), (1, n)]
++
++            def send(self, a, b, part):
++                self.parts.append(part)
++
++        emit = Emit()
++        B._wo_b(blk, x, torch.float32, emit)
++        got = torch.cat(emit.parts)
++    assert torch.allclose(got, want, atol=1e-6, rtol=1e-6)
++
++
++@pytest.fixture(scope="module")
++def ckpt(tmp_path_factory):
++    root = FK.write_checkpoint(tmp_path_factory.mktemp("dsv41-glp"))
++    from tensorfold.families.deepseek_v41.cuda.config import Config
++    import json
++    cfg = Config.from_dict(json.loads((root / "config.json").read_text()))
++    return root, cfg, FK.engram_table(cfg)
++
++
++def arm(fw, alpha=0.25):
++    layers, hidden = fw.cfg.num_hidden_layers, fw.cfg.hidden_size
++    table = torch.zeros((layers, hidden))
++    for i in range(1, layers - 1):
++        table[i] = torch.arange(1, hidden + 1).float() * (i + 1)
++        table[i] /= table[i].norm()
++    fw.glp_dirs = table
++    fw.glp_alpha = alpha
++    for blk in fw.blocks:
++        blk.glp_dirs = table
++        blk.glp_alpha = alpha
++    return table
++
++
++def test_zero_table_preserves_stock_forward_exactly(ckpt):
++    fw = build(ckpt, chunk=16)
++    want = run(fw, IDS, [16, 16, 5])
++    arm(fw, alpha=3.5)
++    fw.glp_dirs.zero_()
++    fw.reset()
++    got = run(fw, IDS, [16, 16, 5])
++    assert torch.equal(got, want)
++
++
++def test_steering_changes_forward_and_keeps_tp2_streams_identical(ckpt):
++    baseline = build(ckpt, chunk=16)
++    want = run(baseline, IDS, [16, 16, 5])
++
++    def go(fw):
++        arm(fw)
++        fw.trace = {}
++        return run(fw, IDS, [16, 16, 5]), {k: v.clone() for k, v in fw.trace.items()}
++
++    one = build(ckpt, chunk=16)
++    got, _ = go(one)
++    assert not torch.equal(got, want)
++    _, (a, b) = tp2(ckpt, go, chunk=16)
++    for (out_a, trace_a), (out_b, trace_b) in ((a, b),):
++        assert not torch.equal(out_a, want) and not torch.equal(out_b, want)
++        assert set(trace_a) == set(trace_b)
++        for layer in trace_a:
++            assert torch.equal(trace_a[layer], trace_b[layer]), layer

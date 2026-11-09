@@ -211,7 +211,7 @@ Use the vLLM model ID `deepseek-v4.1-flash-1017-exl3` with the same arguments af
 The TensorFold profile supports [weightless](https://github.com/msuiche/weightless) **GLP spec_version 3** rank-1
 vectors (`glp.mode=project`, `glp.hook_point=hc_fold_pre_engram`). After each layer's hyper-connection fold and
 before Engram, the engine computes `h = mean_c(stream)` over the four copies and subtracts `alpha * (h.d)d` from
-every copy. The attention output writer applies the same layer direction and alpha before the rank reduction;
+every copy. The attention output writer applies the same layer direction and alpha after the rank reduction;
 this companion projection is required by the v3 contract and runs in the normal and overlapped-prefill paths.
 `patches/tensorfold-glp.patch` adds the fail-closed loader, Triton projection and engine wiring. With `GLP_FILE`
 unset, the captured graphs are unchanged.
@@ -238,7 +238,10 @@ Put the same file at the same host path on both nodes and set it in `config/clus
 GLP_FILE=/srv/vectors/glp.deepseek-v41-flash-1017-GLP-27-L11-37-a3.5.gguf
 ```
 
-`GLP_ALPHA` optionally overrides the file's calibrated default. `cluster.py check` re-validates the file and
+`GLP_ALPHA` optionally overrides the file's calibrated default. **DSpark drafting is not supported while steering**:
+set `NO_DRAFTS=1` in `config/cluster.env`. The draft stack has different MTP weights and no calibrated GLP directions, so
+the engine refuses to run it rather than mixing stock draft proposals with steered target layers.
+`cluster.py check` re-validates the file and
 verifies the worker's copy exists; at boot the engine hashes it into the rank settings fingerprint, so two
 different copies refuse to start rather than serve divergent streams. This patch applies only to the TensorFold
 profile; the vLLM profile uses the separate `deepseek_v41` adapter in the weightless repository.

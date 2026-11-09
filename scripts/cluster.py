@@ -40,6 +40,7 @@ def docker_args(rank):
   args+=['-v',C['GLP_FILE']+':/glp/control.gguf:ro']
   env['TF_DSV41_GLP']='/glp/control.gguf'
   if C.get('GLP_ALPHA'):env['TF_DSV41_GLP_ALPHA']=C['GLP_ALPHA']
+ if C.get('NO_DRAFTS')=='1':args+=['--no-drafts']
  for key,value in sorted(env.items()):args+=['-e',key+'='+value]
  args+=['--entrypoint','python',C['IMAGE'],'-m','tensorfold','serve','/model','--tp','2','--rank',str(rank),
         '--master',C['HEAD_IP'],'--master-port',C['MASTER_PORT'],'--context',C['CONTEXT'],

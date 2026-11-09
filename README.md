@@ -206,6 +206,46 @@ python scripts/benchmark.py \
 
 Use the vLLM model ID `deepseek-v4.1-flash-1017-exl3` with the same arguments after switching. For prefill-only tests, add `--output-tokens 1`. The complete matrix, token lengths, counting conventions and limitations are documented in [the method](docs/benchmark-method.md).
 
+## GLP steering (optional)
+
+The TensorFold profile supports [weightless](https://github.com/msuiche/weightless) **GLP spec_version 3** rank-1
+vectors (`glp.mode=project`, `glp.hook_point=hc_fold_pre_engram`). After each layer's hyper-connection fold and
+before Engram, the engine computes `h = mean_c(stream)` over the four copies and subtracts `alpha * (h.d)d` from
+every copy. The attention output writer applies the same layer direction and alpha after the rank reduction;
+this companion projection is required by the v3 contract and runs in the normal and overlapped-prefill paths.
+`patches/tensorfold-glp.patch` adds the fail-closed loader, Triton projection and engine wiring. With `GLP_FILE`
+unset, the captured graphs are unchanged.
+
+Directions have hidden width 5,120 per copy, not the flattened 20,480-wide stream. `direction.N` applies at
+zero-based layer `N`; supported fold sites are `direction.1`..`direction.38`. `direction.39` is refused because
+this engine fuses the last fold into final normalization. Rank-k files and alpha multipliers are refused, never
+partially applied.
+
+The published
+[`msuiche/DeepSeek-V4.1-Flash-1017-abliterated-cyber-GLP-27-L11-37-a3.5`](https://huggingface.co/msuiche/DeepSeek-V4.1-Flash-1017-abliterated-cyber-GLP-27-L11-37-a3.5)
+vector is directly compatible: a 544 KB rank-1 GLP v3 sidecar over layers 11–37 at the calibrated alpha 3.5.
+Older `residual_stream_post_layer` vectors, including GLP-39, are refused rather than applied at the wrong site.
+
+To validate a sidecar offline with the exact loader used by the engine:
+
+```bash
+python3 tools/glpcheck.py /srv/vectors/glp.deepseek-v41-flash-1017-GLP-27-L11-37-a3.5.gguf
+```
+
+Put the same file at the same host path on both nodes and set it in `config/cluster.env`:
+
+```bash
+GLP_FILE=/srv/vectors/glp.deepseek-v41-flash-1017-GLP-27-L11-37-a3.5.gguf
+```
+
+`GLP_ALPHA` optionally overrides the file's calibrated default. **DSpark drafting is not supported while steering**:
+set `NO_DRAFTS=1` in `config/cluster.env`. The draft stack has different MTP weights and no calibrated GLP directions, so
+the engine refuses to run it rather than mixing stock draft proposals with steered target layers.
+`cluster.py check` re-validates the file and
+verifies the worker's copy exists; at boot the engine hashes it into the rank settings fingerprint, so two
+different copies refuse to start rather than serve divergent streams. This patch applies only to the TensorFold
+profile; the vLLM profile uses the separate `deepseek_v41` adapter in the weightless repository.
+
 ## Scope and attribution
 
 This repository distributes the integration recipe, source patches and benchmark artifacts. Model weights and private machine configuration are downloaded or supplied separately. Upstream components retain their existing licenses, included in `LICENSES/`; no blanket license is added for original integration material.
@@ -218,3 +258,4 @@ This repository distributes the integration recipe, source patches and benchmark
 - [MiaAI's DeepSeek V4.1 EXL3 dual-Spark kit](https://github.com/MiaAI-Lab/DeepSeek-v4.1-Flash-EXL3-2x-DGX-Sparks): the vLLM runtime, file-backed Engram implementation, packing tools, chat template and sharing helpers.
 - [LibertAIDAI's EXL3 checkpoint](https://huggingface.co/LibertAIDAI/DeepSeek-V4.1-Flash-1017-EXL3-2.9bpw) and [DeepSeek's official 1017 model](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017): model weights, tokenizer, reference encoder and matching Engram tables.
 - [npaka's TensorFold overview](https://note.com/npaka/n/n3d3e09549bdd): the supplied artwork reference. The TensorFold logo reference came from the upstream asset; TensorFold and DeepSeek marks belong to their respective owners. [Artwork prompt](assets/artwork-prompt.txt).
+- `patches/tensorfold-glp.patch` implements the GLP (GGUF Layer Projection) contract of the [weightless](https://github.com/msuiche/weightless) project by Matt Suiche ([`docs/spec/GLP.md`](https://github.com/msuiche/weightless/blob/main/docs/spec/GLP.md)); the reference vLLM reader whose gates its loader mirrors is MIT. GLP vectors are distributed separately and are not part of this repository.

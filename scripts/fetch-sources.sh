@@ -23,4 +23,5 @@ git -C build/jayleaton/vendor/TensorFold archive HEAD | tar -x -C build/tensorfo
 patch -d build/mia-runtime -p1 < patches/mia-1017.patch
 for item in build/jayleaton/patches/*.patch; do patch -d build/tensorfold -p1 < "$item"; done
 patch -d build/tensorfold -p1 < patches/tensorfold-1017.patch
+patch -d build/tensorfold -p1 < patches/tensorfold-glp.patch
 echo 'Pinned serving sources prepared. No model or GPU service was started.'

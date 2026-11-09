@@ -1,0 +1,655 @@
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/engine.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/engine.py
+@@ -200,14 +200,45 @@
+         from . import vision as vision_mod
+ 
+         bias_vl = os.environ.get("TF_DSV41_BIAS_VL", "").strip()
++        # Read and fingerprint the sidecar before any weight work. Different ranks carrying different vectors
++        # refuse to meet; an unset path keeps steering out of every captured graph.
++        import math
++
++        glp_table = None
++        glp_alpha = 0.0
++        glp_sha = 0
++        glp_alpha_sha = 0
++        glp_path = os.environ.get("TF_DSV41_GLP", "").strip()
++        if glp_path:
++            from . import glp as GLP
++            GLP.require_no_drafts(serving, serial_only)
++            glp_dirs, glp_alpha, glp_sha = GLP.load(glp_path, layers=cfg.num_hidden_layers,
++                                                    width=cfg.hidden_size)
++            alpha_env = os.environ.get("TF_DSV41_GLP_ALPHA", "").strip()
++            if alpha_env:
++                try:
++                    glp_alpha = float(alpha_env)
++                except ValueError:
++                    raise ValueError(f"TF_DSV41_GLP_ALPHA is a float, not {alpha_env!r}") from None
++                if not math.isfinite(glp_alpha):
++                    raise ValueError(f"TF_DSV41_GLP_ALPHA must be finite, not {alpha_env!r}")
++            table = torch.zeros((cfg.num_hidden_layers, cfg.hidden_size), dtype=torch.float32)
++            for li, vec in glp_dirs.items():
++                table[li] = torch.from_numpy(vec)
++            glp_table = table.to(self.device)
++            glp_alpha_sha = GLP.alpha_fingerprint(glp_alpha)
++            print(f"[tensorfold] GLP v3 steering (weightless, mode=project, hook {GLP.HOOK}): {glp_path}, "
++                  f"{len(glp_dirs)} layers {min(glp_dirs)}..{max(glp_dirs)}, alpha {glp_alpha}", flush=True)
+         mine = [context, chunk, int(serial_only), int(tm_ident[:7], 16), parallel, int(serving), pchunk,
+-                prefill_mm.tag_grid(), int(bool(bias_vl))]
++                prefill_mm.tag_grid(), int(bool(bias_vl)), glp_sha, glp_alpha_sha]
+         both = self._gather_ints(mine)
+         if both[0] != both[1]:
+             raise RuntimeError(f"the two ranks were started with different settings (context, TF_DSV41_CHUNK, "
+                                f"--no-drafts, Engram token map, --parallel, TF_DSV41_SERVING, "
+                                f"TF_DSV41_PREFILL_CHUNK, TF_DSV41_PREFILL_KERNELS / FAST_EXPERTS, "
+-                               f"TF_DSV41_BIAS_VL set): rank 0 {both[0]}, rank 1 {both[1]}")
++                               f"TF_DSV41_BIAS_VL set, TF_DSV41_GLP): rank 0 {both[0]}, rank 1 {both[1]}")
++        # Session entries are only reusable for the exact same vector and computed alpha.
++        os.environ["TF_DSV41_GLP_FINGERPRINT"] = f"{glp_sha:08x}-{glp_alpha_sha:08x}"
+         key = fastboot.weights_key(self.model_dir, rank, 2, device=device, extra={"token_map": tm_ident})
+ 
+         def build():
+@@ -234,6 +265,9 @@
+                 "dspark", {**key, "part": "dspark"}, b, device))
+         else:
+             self.fw = SlotsForward(cfg, tree, **fw_args)
++        if glp_table is not None:
++            self.fw.glp_dirs = glp_table
++            self.fw.glp_alpha = glp_alpha
+         del tree
+         if bias_vl:                 # the image routing bias (the packs dropped it): both ranks route alike
+             got = vision_mod.attach_bias_vl(self.fw.blocks, bias_vl)
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/forward.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/forward.py
+@@ -175,6 +175,9 @@
+         if any(L < len(self.blocks) for L in cfg.engram_layer_ids) and (hasher is None or not self.engram_rows):
+             raise ValueError("Engram layers need the hasher (token map) and this rank's row sources")
+         self.keep_taps = taps
++        # Installed by the engine before graph capture. None keeps all steering out of the captured path.
++        self.glp_dirs = None
++        self.glp_alpha = 0.0
+         self.hc = seams.hc_ops(self.device, cfg)
+         self.trace: dict | None = None      # {layer: streams after the block} of the last run, when a dict
+         self.slots = [self.new_slot(contiguous) for _ in range(slots)]      # no rows yet: the pool's (bind)
+@@ -456,6 +459,7 @@
+         and its compressor has stored the rows (CED's encoder pass, ``replay``); ``entered``: the first block's site
+         is already in ``st`` (the decoder replay starts at its attention)."""
+ 
++        from . import glp as GLP
+         from . import l2pf as L2
+         from . import xmap as XM
+         from . import xovl as XO
+@@ -474,6 +478,11 @@
+                         XO.post_only(ops, x, x, st.gathered, coefs[st.cur], tap)
+                     elif st.gathered is not None:
+                         ops.post_only(x, x, st.gathered, coefs[st.cur], tap)
++                    if st.gathered is not None and self.glp_dirs is not None:
++                        # direction.N steers the fold consuming zero-based layer N's FFN write. The fold runs
++                        # at the start of block N+1; project the mean of the four copies and subtract the same
++                        # term from each copy before Engram.
++                        GLP.glp_project(x, self.glp_dirs[blk.index - 1], self.glp_alpha, copies=cfg.hc_mult)
+                     if blk.engram is not None:
+                         B.engram(blk, x, rows[blk.index], None if st.image is None else st.image.keep)
+                     pre_in = coefs[st.cur].pre if st.gathered is not None else None
+@@ -500,10 +509,18 @@
+                 B.attention(blk, out, ctxs, self.partial_dtype(n), emit=st.gathered)
+             else:
+                 part = B.attention(blk, out, ctxs, self.partial_dtype(n))
++            if self.glp_dirs is not None and xo:
++                # Split halves wait for their gathers; rank 0 then holds the projected full output and the other
++                # ranks hold zeros.
++                st.gathered = GLP.reduce_and_project_split(st.gathered, self.glp_dirs[blk.index],
++                                                           self.glp_alpha)
+             L2.mark(blk, "f", n)                # G10 TF_DSV41_L2PF: router + shared expert into L2 during the exchange
+             XM.site(blk, "f", n)                # G15 TF_DSV41_XMAP=prev / both, site f
+             if not xo:
+                 st.gathered = self.gather_partials(part)
++                if self.glp_dirs is not None:
++                    st.gathered = GLP.reduce_and_project(st.gathered, self.glp_dirs[blk.index],
++                                                         self.glp_alpha)
+             XM.site(blk, "b", n)                # G15 TF_DSV41_XMAP=prev / both, site b (default): beside the boundary
+             hf = ops.Hc(blk.hc_ffn.fn, blk.hc_ffn.base, blk.hc_ffn.scale)
+             dst = x if st.alt is None else st.alt
+@@ -534,6 +551,8 @@
+                     XO.post_only(ops, x, y, st.gathered, coefs[st.cur])
+                 else:
+                     ops.post_only(x, y, st.gathered, coefs[st.cur])
++                if self.glp_dirs is not None:
++                    GLP.glp_project(y, self.glp_dirs[blk.index], self.glp_alpha, copies=cfg.hc_mult)
+                 self.trace[blk.index] = y.view(n, cfg.hc_mult, D)
+         L2.join(self.blocks)
+         XM.end(self, n)                         # G15: the map's side stream joins; the trace closes the window
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/stack.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/stack.py
+@@ -37,7 +37,7 @@
+ # knobs that change what an NVMe entry's bytes mean
+ DEFAULT_PREFILL = "replay"        # G4: CED replay by default; TF_DSV41_PREFILL=full for the full prefill
+ BYTE_KNOBS = ("TF_DSV41_PREFILL", "TF_DSV41_INDEX_KV", "TF_DSV41_PREFILL_KERNELS", "TF_DSV41_FAST_EXPERTS",
+-              "TF_DSV41_ROUTER", "TF_DSV41_PREFILL_ROUTER")    # split | one (the same bits) | fused / gemv (other bits)
++              "TF_DSV41_ROUTER", "TF_DSV41_PREFILL_ROUTER", "TF_DSV41_GLP_FINGERPRINT")    # split | one (the same bits) | fused / gemv (other bits)
+ 
+ 
+ def mode_from_env() -> str:
+--- upstream/tests/test_dsv41_glp.py
++++ local/tests/test_dsv41_glp.py
+@@ -0,0 +1,244 @@
++# SPDX-License-Identifier: MIT
++"""GLP spec_version 3 loading, fold/writer math, and off-is-stock forward behavior."""
++
++from __future__ import annotations
++
++import struct
++
++import numpy as np
++import pytest
++
++torch = pytest.importorskip("torch")
++pytestmark = pytest.mark.torch
++
++import dsv41_fakes as FK  # noqa: E402
++from tensorfold.families.deepseek_v41.cuda import glp as GLP  # noqa: E402
++from test_dsv41_forward import IDS, build, run, tp2  # noqa: E402
++
++
++def _string(value: str) -> bytes:
++    raw = value.encode()
++    return struct.pack("<Q", len(raw)) + raw
++
++
++def write_gguf(path, directions: dict[str, np.ndarray], **overrides):
++    meta = {
++        "glp.mode": "project",
++        "glp.hook_point": GLP.HOOK,
++        "glp.spec_version": 3,
++        "glp.alpha_default": 0.5,
++        "glp.rank": 1,
++        **overrides,
++    }
++    if "glp.layer_ids_zero_based" not in meta:
++        meta["glp.layer_ids_zero_based"] = ",".join(
++            str(i) for i in sorted({int(name.split(".")[1]) for name in directions})
++        )
++    types = {str: 8, int: 4, float: 6}
++    chunks = [b"GGUF", struct.pack("<IQQ", 3, len(directions), len(meta))]
++    for key, value in meta.items():
++        chunks += [_string(key), struct.pack("<I", types[type(value)])]
++        if isinstance(value, str):
++            chunks.append(_string(value))
++        elif isinstance(value, int):
++            chunks.append(struct.pack("<I", value))
++        else:
++            chunks.append(struct.pack("<f", value))
++    offset = 0
++    for name, values in directions.items():
++        chunks += [_string(name), struct.pack("<I", 1), struct.pack("<Q", values.size),
++                   struct.pack("<I", 0), struct.pack("<Q", offset)]
++        offset += values.nbytes
++    payload = b"".join(chunks)
++    payload += b"\0" * ((-len(payload)) % 32)
++    path.write_bytes(payload + b"".join(np.asarray(v, dtype="<f4").tobytes() for v in directions.values()))
++
++
++def vector(tmp_path, **overrides):
++    directions = {f"direction.{i}": np.ones(1024, dtype=np.float32) for i in (1, 11, 37)}
++    path = tmp_path / "control.gguf"
++    write_gguf(path, directions, **overrides)
++    return path
++
++
++def test_load_accepts_rank_one_v3_and_normalizes(tmp_path):
++    dirs, alpha, sha = GLP.load(str(vector(tmp_path)), layers=40, width=1024)
++    assert sorted(dirs) == [1, 11, 37]
++    assert alpha == 0.5
++    assert sha > 0
++    for direction in dirs.values():
++        assert np.allclose(direction, 1 / 32)
++
++
++@pytest.mark.parametrize("overrides, match", [
++    ({"glp.spec_version": 2}, "require version 3"),
++    ({"glp.hook_point": "residual_stream_post_layer"}, "expected"),
++    ({"glp.derived_at": "residual_stream_post_layer"}, "calibration site"),
++    ({"glp.mode": "add"}, "projective"),
++    ({"glp.dir_scales": "1.0"}, "alphas"),
++    ({"glp.layer_ids_zero_based": "1,11"}, "do not match"),
++])
++def test_load_refuses_incompatible_metadata(tmp_path, overrides, match):
++    with pytest.raises(ValueError, match=match):
++        GLP.load(str(vector(tmp_path, **overrides)), layers=40, width=1024)
++
++
++def test_load_refuses_final_layer_and_wrong_width(tmp_path):
++    path = tmp_path / "final.gguf"
++    write_gguf(path, {f"direction.{i}": np.ones(1024, dtype=np.float32) for i in (1, 11, 37, 39)})
++    with pytest.raises(ValueError, match="fused into final normalization"):
++        GLP.load(str(path), layers=40, width=1024)
++    path = tmp_path / "wrong.gguf"
++    write_gguf(path, {"direction.1": np.ones(512, dtype=np.float32)})
++    with pytest.raises(ValueError, match="expected hidden width 1024"):
++        GLP.load(str(path), layers=40, width=1024)
++
++
++def test_load_refuses_rank_two(tmp_path):
++    path = tmp_path / "rank2.gguf"
++    write_gguf(path, {"direction.1": np.ones(1024, dtype=np.float32),
++                      "direction.1.1": np.ones(1024, dtype=np.float32)}, **{"glp.rank": 2})
++    with pytest.raises(ValueError, match="only rank-1"):
++        GLP.load(str(path), layers=40, width=1024)
++
++
++def test_alpha_fingerprint_distinguishes_strengths():
++    assert GLP.alpha_fingerprint(1.0) != GLP.alpha_fingerprint(3.5)
++    assert GLP.alpha_fingerprint(3.5) == GLP.alpha_fingerprint(3.5)
++
++
++def test_session_identity_includes_vector_and_alpha():
++    from tensorfold.families.deepseek_v41.cuda import sessdisk, stack
++
++    def ident(fingerprint):
++        return sessdisk.compat_ident(image="same-code",
++                                     knobs={k: fingerprint if k == "TF_DSV41_GLP_FINGERPRINT" else ""
++                                            for k in stack.BYTE_KNOBS}, layout={}, extra={})
++
++    assert ident("aaa-111") == ident("aaa-111")
++    assert ident("aaa-111") != ident("aaa-222")
++    assert ident("aaa-111") != ident("bbb-111")
++    assert ident("00000000-00000000") != ident("01234567-3f800000")
++
++
++def test_dspark_is_refused_only_when_serving_with_drafts():
++    GLP.require_no_drafts(False, False)
++    GLP.require_no_drafts(False, True)
++    GLP.require_no_drafts(True, True)
++    with pytest.raises(ValueError, match="requires --no-drafts"):
++        GLP.require_no_drafts(True, False)
++
++
++def test_projection_matches_mean_over_copies_on_cpu():
++    g = torch.Generator().manual_seed(4)
++    hidden = 1024
++    direction = torch.randn(hidden, generator=g).float()
++    direction /= direction.norm()
++    for copies in (1, 4):
++        x = torch.randn(2, copies * hidden, generator=g).to(torch.bfloat16)
++        want = x.reshape(2, copies, hidden).float()
++        mean = want.mean(dim=1)
++        want = (want - (0.5 * (mean @ direction)).view(2, 1, 1) * direction).to(torch.bfloat16).float()
++        GLP.glp_project(x, direction, 0.5, copies=copies)
++        got = x.reshape(2, copies, hidden).float()
++        assert torch.allclose(got, want, atol=0.008, rtol=0.01)
++
++
++def test_zero_alpha_is_exact_noop():
++    x = torch.randn(2, 4 * 1024).to(torch.bfloat16)
++    want = x.clone()
++    direction = torch.ones(1024).float()
++    GLP.glp_project(x, direction, 0.0, copies=4)
++    assert torch.equal(x, want)
++
++
++def test_cpu_subtraction_rounds_only_the_result():
++    x = torch.tensor([[1.0, 2.0]], dtype=torch.bfloat16)
++    direction = torch.tensor([1.0, 0.0])
++    delta = 0.501 * (x.float() @ direction).view(1, 1) * direction
++    want = (x.float() - delta).to(torch.bfloat16)
++    GLP.glp_project(x, direction, 0.501)
++    assert torch.equal(x, want)
++
++
++def test_reduce_and_project_matches_projection_of_full_writer():
++    g = torch.Generator().manual_seed(7)
++    direction = torch.randn(1024, generator=g).float()
++    direction /= direction.norm()
++    parts = [torch.randn(2, 1024, generator=g) for _ in range(2)]
++    full = parts[0] + parts[1]
++    want = full - (0.5 * (full @ direction)).view(2, 1) * direction
++    got = GLP.reduce_and_project(torch.stack(parts), direction, 0.5)
++    assert torch.allclose(got[0], want, atol=1e-5, rtol=1e-5)
++    assert torch.count_nonzero(got[1]) == 0
++
++
++def test_reduce_and_project_split_waits_and_projects_each_half():
++    direction = torch.ones(1024).float() / 32
++    parts = torch.randn(2, 2, 1024)
++    full = parts[0] + parts[1]
++    want = full - (0.5 * (full @ direction)).view(2, 1) * direction
++
++    class Split:
++        def __init__(self):
++            self.parts = [parts.clone()]
++            self.waits = []
++
++        def wait(self, i):
++            self.waits.append(i)
++
++    split = Split()
++    got = GLP.reduce_and_project_split(split, direction, 0.5)
++    assert split.waits == [0]
++    assert torch.allclose(got.parts[0][0], want, atol=1e-5, rtol=1e-5)
++    assert torch.count_nonzero(got.parts[0][1]) == 0
++
++
++@pytest.fixture(scope="module")
++def ckpt(tmp_path_factory):
++    root = FK.write_checkpoint(tmp_path_factory.mktemp("dsv41-glp"))
++    from tensorfold.families.deepseek_v41.cuda.config import Config
++    import json
++    cfg = Config.from_dict(json.loads((root / "config.json").read_text()))
++    return root, cfg, FK.engram_table(cfg)
++
++
++def arm(fw, alpha=0.25):
++    layers, hidden = fw.cfg.num_hidden_layers, fw.cfg.hidden_size
++    table = torch.zeros((layers, hidden))
++    for i in range(1, layers - 1):
++        table[i] = torch.arange(1, hidden + 1).float() * (i + 1)
++        table[i] /= table[i].norm()
++    fw.glp_dirs = table
++    fw.glp_alpha = alpha
++    return table
++
++
++def test_zero_table_preserves_stock_forward_exactly(ckpt):
++    fw = build(ckpt, chunk=16)
++    want = run(fw, IDS, [16, 16, 5])
++    arm(fw, alpha=3.5)
++    fw.glp_dirs.zero_()
++    fw.reset()
++    got = run(fw, IDS, [16, 16, 5])
++    assert torch.equal(got, want)
++
++
++def test_steering_changes_forward_and_keeps_tp2_streams_identical(ckpt):
++    baseline = build(ckpt, chunk=16)
++    want = run(baseline, IDS, [16, 16, 5])
++
++    def go(fw):
++        arm(fw)
++        fw.trace = {}
++        return run(fw, IDS, [16, 16, 5]), {k: v.clone() for k, v in fw.trace.items()}
++
++    one = build(ckpt, chunk=16)
++    got, _ = go(one)
++    assert not torch.equal(got, want)
++    _, (a, b) = tp2(ckpt, go, chunk=16)
++    for (out_a, trace_a), (out_b, trace_b) in ((a, b),):
++        assert not torch.equal(out_a, want) and not torch.equal(out_b, want)
++        assert set(trace_a) == set(trace_b)
++        for layer in trace_a:
++            assert torch.equal(trace_a[layer], trace_b[layer]), layer
+--- upstream/src/tensorfold/families/deepseek_v41/cuda/glp.py
++++ local/src/tensorfold/families/deepseek_v41/cuda/glp.py
+@@ -0,0 +1,274 @@
++"""GLP spec_version 3 steering at DeepSeek-V4.1's hyper-connection fold.
++
++A sidecar carries rank-1 F32 ``direction.<N>`` tensors under ``glp.mode=project`` and
++``glp.hook_point=hc_fold_pre_engram``. For each row, the fold computes ``h = mean_c(stream_c)`` and every copy
++loses ``alpha * (h.d)d``. The attention output writer applies the same layer's direction and alpha after rank reduction.
++
++The reader is fail-closed: unsupported versions, hooks, ranks, alpha multipliers, geometries and final-layer
++vectors are refused rather than partially applied. ``TF_DSV41_GLP`` names the file and ``TF_DSV41_GLP_ALPHA``
++optionally overrides its calibrated default. An unset file leaves the captured graphs untouched.
++"""
++
++from __future__ import annotations
++
++import hashlib
++import math
++import re
++import struct
++
++import numpy as np
++
++HOOK = "hc_fold_pre_engram"
++
++
++def alpha_fingerprint(alpha: float) -> int:
++    """Exact float32 bits used by the two-rank and persisted-session fingerprints."""
++
++    return struct.unpack("<I", struct.pack("<f", alpha))[0] & 0x7FFF_FFFF
++
++
++def require_no_drafts(serving: bool, serial_only: bool) -> None:
++    """Refuse a draft stack whose MTP weights have no calibrated GLP directions."""
++
++    if serving and not serial_only:
++        raise ValueError("GLP v3 steering requires --no-drafts: the DSpark drafter has no calibrated fold "
++                         "and companion-writer implementation")
++
++
++_SZ = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
++_FM = {0: "<B", 1: "<b", 2: "<H", 3: "<h", 4: "<I", 5: "<i", 6: "<f",
++       7: "<B", 10: "<Q", 11: "<q", 12: "<d"}
++_DIRECTION_RE = re.compile(r"direction\.(\d+)(?:\.(\d+))?")
++
++
++def _int_meta(meta: dict, key: str, default: int) -> int:
++    v = meta.get(key)
++    if v is None or v == "":
++        return default
++    return int(float(str(v)))
++
++
++def read_gguf(path: str) -> tuple[dict, dict[str, np.ndarray]]:
++    """Read the GGUF v3 metadata and F32 tensors needed by the control-vector contract."""
++
++    with open(path, "rb") as f:
++        data = f.read()
++    if data[:4] != b"GGUF":
++        raise ValueError(f"{path}: bad magic, not a GGUF file")
++    ver, n_tensors, n_kv = struct.unpack_from("<IQQ", data, 4)
++    if ver != 3:
++        raise ValueError(f"{path}: GGUF version {ver}, expected 3")
++    off = 24
++
++    def rd_string(o):
++        (n,) = struct.unpack_from("<Q", data, o)
++        o += 8
++        return data[o:o + n].decode("utf-8"), o + n
++
++    meta = {}
++    for _ in range(n_kv):
++        key, off = rd_string(off)
++        (vtype,) = struct.unpack_from("<I", data, off)
++        off += 4
++        if vtype == 8:
++            val, off = rd_string(off)
++        elif vtype == 9:
++            etype, cnt = struct.unpack_from("<IQ", data, off)
++            off += 12
++            if etype == 8:
++                val = []
++                for _ in range(cnt):
++                    s, off = rd_string(off)
++                    val.append(s)
++            else:
++                val = struct.unpack_from(f"<{cnt}{_FM[etype][1]}", data, off)
++                off += _SZ[etype] * cnt
++        else:
++            (val,) = struct.unpack_from(_FM[vtype], data, off)
++            off += _SZ[vtype]
++        meta[key] = val
++
++    infos = []
++    for _ in range(n_tensors):
++        name, off = rd_string(off)
++        (nd,) = struct.unpack_from("<I", data, off)
++        off += 4
++        dims = struct.unpack_from(f"<{nd}Q", data, off)
++        off += 8 * nd
++        (tt,) = struct.unpack_from("<I", data, off)
++        off += 4
++        (toff,) = struct.unpack_from("<Q", data, off)
++        off += 8
++        infos.append((name, dims, tt, toff))
++
++    align = meta.get("general.alignment", 32)
++    base = (off + align - 1) // align * align
++    tensors = {}
++    for name, dims, tt, toff in infos:
++        if tt != 0:
++            raise ValueError(f"{path}: {name} is not F32 (ggml type {tt})")
++        n = 1
++        for d in dims:
++            n *= d
++        tensors[name] = np.frombuffer(data, dtype="<f4", count=n, offset=base + toff).copy()
++    return meta, tensors
++
++
++def load(path: str, *, layers: int, width: int) -> tuple[dict[int, np.ndarray], float, int]:
++    """Return ``{zero-based layer: unit direction}``, alpha and a rank-fingerprint hash, or refuse the file."""
++
++    with open(path, "rb") as f:
++        raw = f.read()
++    sha = int.from_bytes(hashlib.sha256(raw).digest()[:4], "little") & 0x7FFF_FFFF
++    meta, tensors = read_gguf(path)
++
++    mode = meta.get("glp.mode")
++    if mode is None:
++        raise ValueError(f"{path}: no glp.mode; refusing to guess additive or projective semantics")
++    if mode != "project":
++        raise ValueError(f"{path}: glp.mode={mode!r}; this engine implements only projective ablation")
++
++    file_hook = meta.get("glp.hook_point")
++    if file_hook != HOOK:
++        raise ValueError(f"{path}: glp.hook_point={file_hook!r}, expected {HOOK!r}")
++    derived_at = meta.get("glp.derived_at", HOOK)
++    if derived_at != HOOK:
++        raise ValueError(f"{path}: glp.derived_at={derived_at!r} does not match the fold's calibration site {HOOK!r}")
++
++    version = _int_meta(meta, "glp.spec_version", 1)
++    if version != 3:
++        raise ValueError(f"{path}: glp.spec_version={version}; the fold and companion writer require version 3")
++    if _int_meta(meta, "glp.rank", 1) != 1:
++        raise ValueError(f"{path}: only rank-1 vectors are implemented; refusing a partially applied subspace")
++    scales = sorted(set(meta) & {"glp.dir_scales", "glp.layer_scales"})
++    if scales:
++        raise ValueError(f"{path}: {', '.join(scales)} requires per-direction/per-layer alphas this engine does not implement")
++
++    alpha = float(meta.get("glp.alpha_default", 1.0))
++    if not math.isfinite(alpha):
++        raise ValueError(f"{path}: glp.alpha_default must be finite")
++
++    grouped: dict[int, dict[int, np.ndarray]] = {}
++    for name, arr in tensors.items():
++        match = _DIRECTION_RE.fullmatch(name)
++        if match is None:
++            if name.startswith("direction."):
++                raise ValueError(f"{path}: malformed direction tensor name {name!r}")
++            continue
++        idx, j = int(match.group(1)), int(match.group(2) or 0)
++        if idx < 1:
++            raise ValueError(f"{path}: {name} is invalid; direction.0 cannot be expressed")
++        if j != 0:
++            raise ValueError(f"{path}: {name} is a rank-{j + 1} direction; only rank 1 is implemented")
++        arr = np.asarray(arr, dtype=np.float32).reshape(-1)
++        if not np.isfinite(arr).all() or not np.any(arr):
++            raise ValueError(f"{path}: {name} must be finite and nonzero")
++        grouped.setdefault(idx, {})[j] = arr
++    if not grouped:
++        raise ValueError(f"{path}: no direction.<N> tensors found")
++
++    declared = meta.get("glp.layer_ids_zero_based")
++    if declared:
++        try:
++            want = sorted(int(x) for x in declared.split(",") if x.strip())
++        except ValueError:
++            raise ValueError(f"{path}: glp.layer_ids_zero_based is not a comma list of integers") from None
++        if want and want != sorted(grouped):
++            raise ValueError(f"{path}: declared layers {want} do not match tensor layers {sorted(grouped)}")
++
++    dirs: dict[int, np.ndarray] = {}
++    for idx, js in grouped.items():
++        if not 0 <= idx < layers - 1:
++            note = (f": layer {idx}'s fold is fused into final normalization in this engine"
++                    if idx == layers - 1 else "")
++            raise ValueError(f"{path}: direction.{idx} has no implemented fold site{note}")
++        vec = js[0].astype(np.float64)
++        if vec.size != width:
++            raise ValueError(f"{path}: direction.{idx} is {vec.size} wide; expected hidden width {width}")
++        norm = np.linalg.norm(vec)
++        if not math.isfinite(norm) or norm <= 0:
++            raise ValueError(f"{path}: direction.{idx} must be finite and nonzero")
++        dirs[idx] = (vec / norm).astype(np.float32)
++    return dirs, alpha, sha
++
++
++def reduce_and_project(gathered, drow, alpha: float):
++    """Project the reduced writer, then place it in rank 0 with zeros elsewhere for the existing boundary."""
++
++    import torch
++    if gathered.ndim != 3:
++        raise ValueError("reduce_and_project: expected [ranks, rows, hidden] partials")
++    full = gathered[0].clone()
++    for rank in range(1, gathered.shape[0]):
++        full += gathered[rank]
++    out = torch.zeros_like(gathered)
++    glp_project(full, drow, alpha)
++    out[0] = full
++    return out
++
++
++def reduce_and_project_split(split, drow, alpha: float):
++    """The overlapped-prefill equivalent, applied only after each gathered half has landed."""
++
++    for i in range(len(split.parts)):
++        split.wait(i)
++        split.parts[i] = reduce_and_project(split.parts[i], drow, alpha)
++    return split
++
++
++def glp_project(x, drow, alpha: float, *, copies: int = 1) -> None:
++    """Project ``h = mean_c(x_c)`` off every copy in place, or a writer when ``copies=1``."""
++
++    import torch
++
++    if x.ndim != 2 or drow.ndim != 1:
++        raise ValueError("glp_project: x must be [rows, copies*hidden] and drow [hidden]")
++    rows, wide = x.shape
++    hidden = drow.numel()
++    if copies < 1 or wide != copies * hidden:
++        raise ValueError(f"glp_project: stream width {wide} != {copies} copies x hidden {hidden}")
++    if x.dtype not in (torch.bfloat16, torch.float32):
++        raise ValueError(f"glp_project: unsupported stream dtype {x.dtype}")
++    if not x.is_cuda:
++        stream = x.reshape(rows, copies, hidden)
++        mean = stream.to(torch.float32).mean(dim=1)
++        delta = (float(alpha) * (mean @ drow)).unsqueeze(-1) * drow
++        stream.sub_(delta.unsqueeze(1))
++        return
++    if hidden % 1024:
++        raise ValueError(f"glp_project: hidden width {hidden} is not a multiple of 1024 for the CUDA kernel")
++
++    global _KERNEL
++    if _KERNEL is None:
++        _KERNEL = _kernel()
++    _KERNEL[(rows,)](x, drow, float(alpha), C=copies, D=hidden, BLOCK=1024, num_warps=4)
++
++
++def _kernel():
++    import triton
++    import triton.language as tl
++
++    @triton.jit
++    def _glp_project(X, DIR, alpha, C: tl.constexpr, D: tl.constexpr, BLOCK: tl.constexpr):
++        r = tl.program_id(0)
++        acc = 0.0
++        for cb in tl.static_range(D // BLOCK):
++            d = cb * BLOCK + tl.arange(0, BLOCK)
++            mean = tl.zeros([BLOCK], dtype=tl.float32)
++            for c in tl.static_range(C):
++                x = tl.load(X + r * C * D + c * D + d).to(tl.float32)
++                mean += x / C
++            acc += tl.sum(mean * tl.load(DIR + d), axis=0)
++        coef = alpha * acc
++        for cb in tl.static_range(D // BLOCK):
++            d = cb * BLOCK + tl.arange(0, BLOCK)
++            v = tl.load(DIR + d)
++            for c in tl.static_range(C):
++                off = r * C * D + c * D + d
++                x = tl.load(X + off).to(tl.float32)
++                tl.store(X + off, (x - coef * v).to(X.dtype.element_ty))
++
++    return _glp_project
++
++
++_KERNEL = None

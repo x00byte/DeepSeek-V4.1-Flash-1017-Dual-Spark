@@ -36,6 +36,11 @@ def docker_args(rank):
  env.update(TORCH_EXTENSIONS_DIR='/cache/torch_extensions',TRITON_CACHE_DIR='/cache/triton',
             CUDA_CACHE_PATH='/cache/nv/ComputeCache',GLOO_SOCKET_IFNAME=C['NCCL_SOCKET_IFNAME'],
             MAX_JOBS='2',PYTHONDONTWRITEBYTECODE='1',TF_DSV41_IMAGE_ID=C['IMAGE'])
+ if C.get('GLP_FILE'):# weightless GLP steering (README): the same sidecar at the same host path on both nodes
+  args+=['-v',C['GLP_FILE']+':/glp/control.gguf:ro']
+  env['TF_DSV41_GLP']='/glp/control.gguf'
+  if C.get('GLP_ALPHA'):env['TF_DSV41_GLP_ALPHA']=C['GLP_ALPHA']
+ if C.get('NO_DRAFTS')=='1':args+=['--no-drafts']
  for key,value in sorted(env.items()):args+=['-e',key+'='+value]
  args+=['--entrypoint','python',C['IMAGE'],'-m','tensorfold','serve','/model','--tp','2','--rank',str(rank),
         '--master',C['HEAD_IP'],'--master-port',C['MASTER_PORT'],'--context',C['CONTEXT'],
@@ -65,6 +70,9 @@ def check():
         '-c',f'test -s /model/chat_template.jinja && test -s /model/config.json && test -s /model/tokenizer.json && test -s /engram/engram-l1-r{int(worker)}of2.bin && test -s /engram/engram-l14-r{int(worker)}of2.bin']
   run(args,worker)
  assert keys[0]==keys[1],'Ship the same built image to both nodes.'
+ if C.get('GLP_FILE'):# steering asked for: the sidecar must validate offline and exist on both nodes
+  run(['python3',str(ROOT/'tools/glpcheck.py'),C['GLP_FILE']])
+  run(['test','-s',C['GLP_FILE']],True)
  run(['docker','run','--rm','--network','none','--memory','2g','--cpus','2',
       '-v',C['MODEL_DIR']+':/model:ro','-v',str(ROOT/'scripts/check-app.py')+':/check.py:ro',
       '--entrypoint','python',C['IMAGE'],'/check.py'])
